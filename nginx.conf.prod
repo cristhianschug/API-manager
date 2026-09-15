@@ -1,0 +1,230 @@
+# Nginx - Production Configuration with Security Headers
+# 20 Security Hardening + Performance
+
+upstream api_backend {
+    server 127.0.0.1:9000;
+    keepalive 32;
+}
+
+# Rate limiting
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=5r/m;
+
+# HTTP -> HTTPS redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.seu-dominio.com;
+
+    # Redirect all HTTP to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+# HTTPS Server
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.seu-dominio.com;
+
+    # ============ SSL/TLS CONFIGURATION ============
+
+    # Certificates (Let's Encrypt)
+    ssl_certificate /etc/letsencrypt/live/api.seu-dominio.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.seu-dominio.com/privkey.pem;
+
+    # SSL protocols (TLS 1.2+ only)
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # OCSP stapling (verify cert revocation)
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+
+    # Session configuration
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+
+
+    # ============ SECURITY HEADERS ============
+
+    # Prevent MIME type sniffing
+    add_header X-Content-Type-Options "nosniff" always;
+
+    # Clickjacking protection
+    add_header X-Frame-Options "DENY" always;
+
+    # XSS protection
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Content Security Policy (CSP)
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';" always;
+
+    # Referrer policy
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Permissions policy (geolocation, camera, microphone, etc.)
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), accelerometer=(), ambient-light-sensor=(), autoplay=(), encrypted-media=(), fullscreen=(), gyroscope=(), magnetometer=(), payment=(), picture-in-picture=(), sync-xhr=(), usb=(), vr=(), xr-spatial-tracking=()" always;
+
+    # HSTS (Strict Transport Security) - Force HTTPS for 1 year
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
+    # Disable content sniffing
+    add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+
+
+    # ============ GZIP COMPRESSION ============
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/rss+xml font/truetype font/opentype application/vnd.ms-fontobject image/svg+xml;
+    gzip_disable "msie6";
+
+
+    # ============ API ENDPOINTS ============
+
+    location /api/v1/ {
+        # Rate limiting
+        limit_req zone=api_limit burst=20 nodelay;
+
+        # Proxy configuration
+        proxy_pass http://api_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $server_name;
+
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        # Buffering
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+        proxy_busy_buffers_size 8k;
+
+        # Remove sensitive headers from upstream
+        proxy_pass_request_headers on;
+
+        # Disable proxy caching for API responses
+        proxy_cache off;
+
+        # Only allow specific methods (GET, OPTIONS)
+        limit_except GET OPTIONS {
+            deny all;
+        }
+    }
+
+    # Health check endpoint (no rate limit)
+    location /api/v1/health {
+        proxy_pass http://api_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        access_log off;
+    }
+
+
+    # ============ SECURITY ENDPOINTS ============
+
+    # Deny access to sensitive files
+    location ~ /\.env {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~ /\.git {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~ /\.gitignore {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+
+    # ============ LOGGING ============
+
+    access_log /var/log/nginx/api-access.log combined buffer=32k flush=5s;
+    error_log /var/log/nginx/api-error.log warn;
+
+    # Log format with security details
+    log_format api_security '$remote_addr - $remote_user [$time_local] '
+                           '"$request" $status $body_bytes_sent '
+                           '"$http_referer" "$http_user_agent" '
+                           'TLS=$ssl_protocol TLS_CIPHER=$ssl_cipher '
+                           'RT=$request_time URT=$upstream_response_time';
+
+
+    # ============ DENY SUSPICIOUS REQUESTS ============
+
+    # Block common exploit attempts
+    if ($request_uri ~* "\.php$|\.asp$|\.jsp$|\.cgi$|\.exe$") {
+        return 403;
+    }
+
+    # Block SQL injection attempts
+    if ($query_string ~* "union|select|insert|update|delete|drop|create|alter|exec|script|javascript|onerror") {
+        return 403;
+    }
+
+    # Block XSS attempts
+    if ($args ~* "<|>|'|\"|;") {
+        return 403;
+    }
+
+    # Block very large requests
+    if ($content_length > 10485760) {  # 10MB
+        return 413;
+    }
+
+
+    # ============ PERFORMANCE ============
+
+    # Disable unnecessary logging for static content
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2)$ {
+        access_log off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+
+    # ============ STATUS PAGE (Internal Only) ============
+
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+        allow 127.0.0.1;
+        allow ::1;
+        deny all;
+    }
+}
+
+
+# ============ UPSTREAM MONITORING ============
+
+# Additional upstreams for failover (optional)
+upstream api_backup {
+    server 127.0.0.1:9001 backup;
+}
+
+# Rate limiting zones summary:
+# - api_limit: 10 requests per second (general API)
+# - auth_limit: 5 requests per minute (auth endpoints)

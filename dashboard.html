@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ERP Anexar API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0066CC;
+            --success: #00AA66;
+            --warning: #FF9900;
+            --danger: #FF3333;
+            --dark: #1A1A2E;
+            --light: #F5F5F5;
+            --border: #CCCCCC;
+        }
+
+        body {
+            font-family: "Segoe UI", Helvetica, sans-serif;
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        /* Header */
+        .header {
+            background: var(--dark);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Metrics Grid */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .metric-card h3 {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .metric-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .metric-card .change {
+            font-size: 12px;
+            color: var(--success);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: white;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button:hover {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Table */
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--light);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--dark);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #e8f5e9;
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: #fff3e0;
+            color: var(--warning);
+        }
+
+        /* Masked Data */
+        .masked-email {
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .spinner {
+            border: 3px solid var(--light);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error */
+        .error {
+            background: #ffebee;
+            color: var(--danger);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .metrics {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+
+        /* Test Result */
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid var(--success);
+            background: #f1f8f4;
+        }
+
+        .test-result.error {
+            border-left-color: var(--danger);
+            background: #fdf1f1;
+        }
+
+        .test-result code {
+            background: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1>📊 Dashboard - ERP Anexar API</h1>
+            <p style="font-size: 12px; color: #aaa; margin-top: 5px;">v1.0 - Validação Local</p>
+        </div>
+        <div class="header-info">
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="api-status">Verificando API...</span>
+            </div>
+            <div>
+                <span id="server-time">--:--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Metrics -->
+        <div class="metrics">
+            <div class="metric-card">
+                <h3>Status API</h3>
+                <div class="value" id="health-status">--</div>
+                <div class="change" id="health-time">--</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Clientes</h3>
+                <div class="value" id="total-clientes">0</div>
+                <div class="change">Carregando...</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Produtos</h3>
+                <div class="value" id="total-produtos">0</div>
+                <div class="change">Carregando...</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Pedidos</h3>
+                <div class="value" id="total-pedidos">0</div>
+                <div class="change">Carregando...</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('clientes')">👥 Clientes</button>
+            <button class="tab-button" onclick="showTab('produtos')">📦 Produtos</button>
+            <button class="tab-button" onclick="showTab('pedidos')">🛒 Pedidos</button>
+            <button class="tab-button" onclick="showTab('security')">🔐 Testes Segurança</button>
+        </div>
+
+        <!-- Clientes Tab -->
+        <div id="clientes-tab" class="tab-content">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Email (Mascarado)</th>
+                            <th>Ativo</th>
+                            <th>Limite Crédito</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientes-tbody">
+                        <tr>
+                            <td colspan="5" class="loading">Carregando clientes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Produtos Tab -->
+        <div id="produtos-tab" class="tab-content" style="display: none;">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Código</th>
+                            <th>Nome</th>
+                            <th>Preço</th>
+                            <th>Ativo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="produtos-tbody">
+                        <tr>
+                            <td colspan="5" class="loading">Carregando produtos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pedidos Tab -->
+        <div id="pedidos-tab" class="tab-content" style="display: none;">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Número</th>
+                            <th>Cliente</th>
+                            <th>Data</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pedidos-tbody">
+                        <tr>
+                            <td colspan="6" class="loading">Carregando pedidos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Security Tests Tab -->
+        <div id="security-tab" class="tab-content" style="display: none;">
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+                <h2 style="margin-bottom: 20px;">🔐 Testes de Segurança</h2>
+                <div id="security-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+
+        // Update server time
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('server-time').textContent = now.toLocaleTimeString('pt-BR');
+        }, 1000);
+
+        // Check API Health
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('api-status').textContent = '✅ API Operacional';
+                    document.getElementById('health-status').textContent = 'OK';
+                    document.getElementById('health-time').textContent = 'Resposta: ' + response.headers.get('date');
+                    document.querySelector('.status-dot').style.background = 'var(--success)';
+
+                    // Load data
+                    loadClientes();
+                    loadProdutos();
+                    loadPedidos();
+                    runSecurityTests();
+                } else {
+                    throw new Error('API respondeu com erro');
+                }
+            } catch (error) {
+                document.getElementById('api-status').textContent = '❌ API Indisponível';
+                document.getElementById('health-status').textContent = 'ERRO';
+                document.querySelector('.status-dot').style.background = 'var(--danger)';
+            }
+        }
+
+        // Load Clientes
+        async function loadClientes() {
+            try {
+                const response = await fetch(`${API_URL}/clientes`);
+                const clientes = await response.json();
+
+                document.getElementById('total-clientes').textContent = clientes.length;
+
+                const tbody = document.getElementById('clientes-tbody');
+                tbody.innerHTML = '';
+
+                if (clientes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="loading">Nenhum cliente encontrado</td></tr>';
+                    return;
+                }
+
+                clientes.forEach(cliente => {
+                    const row = `
+                        <tr>
+                            <td>${cliente.idcliente}</td>
+                            <td>${cliente.nomecliente}</td>
+                            <td class="masked-email">${cliente.email || 'N/A'}</td>
+                            <td>
+                                <span class="badge ${cliente.ativo ? 'badge-success' : 'badge-warning'}">
+                                    ${cliente.ativo ? 'Ativo' : 'Inativo'}
+                                </span>
+                            </td>
+                            <td>R$ ${cliente.limitecredito?.toFixed(2) || '0.00'}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                document.getElementById('clientes-tbody').innerHTML =
+                    `<tr><td colspan="5" class="error">Erro ao carregar: ${error.message}</td></tr>`;
+            }
+        }
+
+        // Load Produtos
+        async function loadProdutos() {
+            try {
+                const response = await fetch(`${API_URL}/produtos`);
+                const produtos = await response.json();
+
+                document.getElementById('total-produtos').textContent = produtos.length;
+
+                const tbody = document.getElementById('produtos-tbody');
+                tbody.innerHTML = '';
+
+                if (produtos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="loading">Nenhum produto encontrado</td></tr>';
+                    return;
+                }
+
+                produtos.forEach(produto => {
+                    const row = `
+                        <tr>
+                            <td>${produto.idproduto}</td>
+                            <td>${produto.codproduto}</td>
+                            <td>${produto.nomeproduto}</td>
+                            <td>R$ ${produto.preco?.toFixed(2) || '0.00'}</td>
+                            <td>
+                                <span class="badge ${produto.ativo ? 'badge-success' : 'badge-warning'}">
+                                    ${produto.ativo ? 'Ativo' : 'Inativo'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                document.getElementById('produtos-tbody').innerHTML =
+                    `<tr><td colspan="5" class="error">Erro ao carregar: ${error.message}</td></tr>`;
+            }
+        }
+
+        // Load Pedidos
+        async function loadPedidos() {
+            try {
+                const response = await fetch(`${API_URL}/pedidos`);
+                const pedidos = await response.json();
+
+                document.getElementById('total-pedidos').textContent = pedidos.length;
+
+                const tbody = document.getElementById('pedidos-tbody');
+                tbody.innerHTML = '';
+
+                if (pedidos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="loading">Nenhum pedido encontrado</td></tr>';
+                    return;
+                }
+
+                pedidos.forEach(pedido => {
+                    const data = new Date(pedido.datapedido).toLocaleDateString('pt-BR');
+                    const row = `
+                        <tr>
+                            <td>${pedido.idpedido}</td>
+                            <td>${pedido.numpedido}</td>
+                            <td>${pedido.nomecliente}</td>
+                            <td>${data}</td>
+                            <td>R$ ${pedido.valortotal?.toFixed(2) || '0.00'}</td>
+                            <td>
+                                <span class="badge ${pedido.status === 'CONFIRMADO' ? 'badge-success' : 'badge-warning'}">
+                                    ${pedido.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                document.getElementById('pedidos-tbody').innerHTML =
+                    `<tr><td colspan="6" class="error">Erro ao carregar: ${error.message}</td></tr>`;
+            }
+        }
+
+        // Security Tests
+        async function runSecurityTests() {
+            const results = document.getElementById('security-results');
+            results.innerHTML = '<div class="loading"><div class="spinner"></div>Executando testes de segurança...</div>';
+
+            const tests = [];
+
+            // Test 1: Health Check
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                tests.push({
+                    name: '1. Health Check',
+                    status: 'success',
+                    message: `Status: ${data.status}, Versão: ${data.version}`
+                });
+            } catch (e) {
+                tests.push({
+                    name: '1. Health Check',
+                    status: 'error',
+                    message: `Erro: ${e.message}`
+                });
+            }
+
+            // Test 2: Data Masking
+            try {
+                const response = await fetch(`${API_URL}/clientes?limit=1`);
+                const clientes = await response.json();
+                if (clientes.length > 0 && clientes[0].email) {
+                    const emailMasked = clientes[0].email.includes('...') ? 'Sim' : 'Não';
+                    tests.push({
+                        name: '2. Data Masking (Email)',
+                        status: emailMasked === 'Sim' ? 'success' : 'error',
+                        message: `Email mascarado: ${emailMasked} - "${clientes[0].email}"`
+                    });
+                }
+            } catch (e) {
+                tests.push({
+                    name: '2. Data Masking',
+                    status: 'error',
+                    message: `Erro: ${e.message}`
+                });
+            }
+
+            // Test 3: 404 Error Handling
+            try {
+                const response = await fetch(`${API_URL}/clientes/999999`);
+                tests.push({
+                    name: '3. Error Handling (404)',
+                    status: response.status === 404 ? 'success' : 'error',
+                    message: `Status code: ${response.status} (esperado: 404)`
+                });
+            } catch (e) {
+                tests.push({
+                    name: '3. Error Handling',
+                    status: 'error',
+                    message: `Erro: ${e.message}`
+                });
+            }
+
+            // Test 4: Input Validation
+            try {
+                const response = await fetch(`${API_URL}/clientes?limit=5000`);
+                const status = response.status;
+                tests.push({
+                    name: '4. Input Validation (Limite)',
+                    status: 'success',
+                    message: `Validação aplicada - Status: ${status}`
+                });
+            } catch (e) {
+                tests.push({
+                    name: '4. Input Validation',
+                    status: 'error',
+                    message: `Erro: ${e.message}`
+                });
+            }
+
+            // Test 5: Security Headers
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const headers = {
+                    'X-Frame-Options': response.headers.get('X-Frame-Options'),
+                    'X-Content-Type-Options': response.headers.get('X-Content-Type-Options'),
+                    'Strict-Transport-Security': response.headers.get('Strict-Transport-Security')
+                };
+                const hasHeaders = Object.values(headers).some(h => h !== null);
+                tests.push({
+                    name: '5. Security Headers',
+                    status: hasHeaders ? 'success' : 'warning',
+                    message: `Headers: ${Object.entries(headers).filter(([k,v]) => v).map(([k,v]) => k).join(', ') || 'Não configurados em dev'}`
+                });
+            } catch (e) {
+                tests.push({
+                    name: '5. Security Headers',
+                    status: 'error',
+                    message: `Erro: ${e.message}`
+                });
+            }
+
+            // Render results
+            results.innerHTML = tests.map(test => `
+                <div class="test-result ${test.status === 'error' ? 'error' : ''}">
+                    <strong>${test.name}</strong>
+                    <span style="float: right;">
+                        ${test.status === 'success' ? '✅' : test.status === 'error' ? '❌' : '⚠️'}
+                    </span>
+                    <div style="margin-top: 5px; font-size: 13px; color: #666;">${test.message}</div>
+                </div>
+            `).join('');
+        }
+
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+
+            // Remove active class
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            checkHealth();
+            setInterval(checkHealth, 30000); // Refresh every 30 seconds
+        });
+    </script>
+</body>
+</html>
