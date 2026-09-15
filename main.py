@@ -38,6 +38,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ============ DASHBOARD ============
+
+@app.get("/", include_in_schema=False)
+async def serve_dashboard():
+    """Serve dashboard at root"""
+    from pathlib import Path
+    dashboard_path = Path(__file__).parent / "dashboard.html"
+    if dashboard_path.exists():
+        from fastapi.responses import FileResponse
+        return FileResponse(dashboard_path, media_type="text/html")
+    return {"message": "Dashboard not found"}
+
 # ============ HEALTH CHECK ============
 
 @app.get("/api/v1/health", response_model=HealthDTO)
