@@ -1,8 +1,9 @@
-"""FastAPI main application - ERP Anexar v2.0 (Real Firebird)"""
+"""FastAPI main application - ERP Anexar v2.0 (Multi-tenant with API Keys)"""
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from sqlalchemy import text
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.security import APIKeyHeader
+from pathlib import Path
 import os
 from dotenv import load_dotenv
 import firebirdsql
@@ -21,15 +22,26 @@ from schemas import (
     FornecedorListDTO, FornecedorDetailDTO, FornecedorCreateDTO,
     HealthDTO
 )
+from tenant_auth import get_tenant_context, require_scope, TenantContext
+from request_logging import RequestLoggingMiddleware
+from admin_routes import router as admin_router
+from platform_db import init_platform_db
 
 load_dotenv('.env.local')
+
+# Initialize platform database on startup
+try:
+    init_platform_db()
+except Exception as e:
+    print(f"[WARN] Platform DB init: {e}")
 
 app = FastAPI(
     title=os.getenv('API_TITLE', 'Anexar ERP API'),
     version=os.getenv('API_VERSION', '2.0.0'),
-    description='Read-Only API para ERP Anexar (Real Firebird)',
+    description='Multi-tenant API para ERP Anexar (Real Firebird)',
 )
 
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,6 +49,12 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Add request logging middleware
+app.add_middleware(RequestLoggingMiddleware)
+
+# Include admin routes
+app.include_router(admin_router)
 
 # ============ DASHBOARD ============
 
@@ -53,20 +71,13 @@ async def serve_dashboard():
 # ============ HEALTH CHECK ============
 
 @app.get("/api/v1/health", response_model=HealthDTO)
-async def health_check(conn: firebirdsql.Connection = Depends(get_db)):
-    """Health check endpoint"""
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT CURRENT_TIMESTAMP FROM RDB$DATABASE")
-        cur.fetchone()
-        cur.close()
-        return HealthDTO(
-            status="ok",
-            version="2.0.0",
-            database="firebird"
-        )
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=str(e))
+async def health_check():
+    """Health check endpoint (no auth required)"""
+    return HealthDTO(
+        status="ok",
+        version="2.0.0",
+        database="firebird"
+    )
 
 # ============ CLIENTES ============
 
@@ -75,11 +86,11 @@ async def list_clientes_route(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     ativo: bool = Query(True),
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('clientes', 'read'))
 ):
     """List clientes"""
     try:
-        results = list_clientes(conn, limit=limit, offset=offset, ativo=ativo)
+        results = list_clientes(context.conn, limit=limit, offset=offset, ativo=ativo)
         return [ClienteListDTO(**r) for r in results]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -87,11 +98,11 @@ async def list_clientes_route(
 @app.get("/api/v1/clientes/{cliente_id}", response_model=ClienteDetailDTO)
 async def get_cliente_route(
     cliente_id: int,
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('clientes', 'read'))
 ):
     """Get cliente by ID"""
     try:
-        result = get_cliente(conn, cliente_id)
+        result = get_cliente(context.conn, cliente_id)
         if not result:
             raise HTTPException(status_code=404, detail="Cliente não encontrado")
         return ClienteDetailDTO(**result)
@@ -103,11 +114,11 @@ async def get_cliente_route(
 @app.post("/api/v1/clientes", response_model=ClienteDetailDTO, status_code=201)
 async def create_cliente(
     cliente: ClienteCreateDTO,
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('clientes', 'write'))
 ):
     """Create novo cliente (POST)"""
     try:
-        cur = conn.cursor()
+        cur = context.conn.cursor()
         query = """
             INSERT INTO TBCLIENTE (RAZAOSOCIAL, NOMEFANTASIA, CNPJCPF, EMAIL,
                                    FONE1, ENDERECO, NUM, CEP, BAIRRO, STATUS, DATACAD)
@@ -126,16 +137,16 @@ async def create_cliente(
             cliente.bairro,
         ))
         new_id = cur.fetchone()[0]
-        conn.commit()
+        context.conn.commit()
         cur.close()
 
         # Fetch created record
-        result = get_cliente(conn, new_id)
+        result = get_cliente(context.conn, new_id)
         if not result:
             raise HTTPException(status_code=500, detail="Failed to create cliente")
         return ClienteDetailDTO(**result)
     except Exception as e:
-        conn.rollback()
+        context.conn.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
 # ============ PRODUTOS ============
@@ -145,11 +156,11 @@ async def list_produtos_route(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     ativo: bool = Query(True),
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('produtos', 'read'))
 ):
     """List produtos"""
     try:
-        results = list_produtos(conn, limit=limit, offset=offset, ativo=ativo)
+        results = list_produtos(context.conn, limit=limit, offset=offset, ativo=ativo)
         return [ProdutoListDTO(**r) for r in results]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -157,11 +168,11 @@ async def list_produtos_route(
 @app.get("/api/v1/produtos/{produto_id}", response_model=ProdutoDetailDTO)
 async def get_produto_route(
     produto_id: int,
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('produtos', 'read'))
 ):
     """Get produto by ID"""
     try:
-        result = get_produto(conn, produto_id)
+        result = get_produto(context.conn, produto_id)
         if not result:
             raise HTTPException(status_code=404, detail="Produto não encontrado")
         return ProdutoDetailDTO(**result)
@@ -176,11 +187,11 @@ async def get_produto_route(
 async def list_pedidos_route(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('pedidos', 'read'))
 ):
     """List pedidos"""
     try:
-        results = list_pedidos(conn, limit=limit, offset=offset)
+        results = list_pedidos(context.conn, limit=limit, offset=offset)
         return [PedidoListDTO(**r) for r in results]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -188,11 +199,11 @@ async def list_pedidos_route(
 @app.get("/api/v1/pedidos/{pedido_id}", response_model=PedidoDetailDTO)
 async def get_pedido_route(
     pedido_id: int,
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('pedidos', 'read'))
 ):
     """Get pedido by ID"""
     try:
-        result = get_pedido(conn, pedido_id)
+        result = get_pedido(context.conn, pedido_id)
         if not result:
             raise HTTPException(status_code=404, detail="Pedido não encontrado")
         return PedidoDetailDTO(**result)
@@ -207,11 +218,11 @@ async def get_pedido_route(
 async def list_parcelas_route(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('parcelas', 'read'))
 ):
     """List parcelas abertas"""
     try:
-        results = list_parcelas(conn, limit=limit, offset=offset)
+        results = list_parcelas(context.conn, limit=limit, offset=offset)
         return [ParcelaListDTO(**r) for r in results]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -219,11 +230,11 @@ async def list_parcelas_route(
 @app.get("/api/v1/parcelas/{parcela_id}", response_model=ParcelaDetailDTO)
 async def get_parcela_route(
     parcela_id: int,
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('parcelas', 'read'))
 ):
     """Get parcela by ID"""
     try:
-        result = get_parcela(conn, parcela_id)
+        result = get_parcela(context.conn, parcela_id)
         if not result:
             raise HTTPException(status_code=404, detail="Parcela não encontrada")
         return ParcelaDetailDTO(**result)
@@ -239,11 +250,11 @@ async def list_fornecedores_route(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     ativo: bool = Query(True),
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('fornecedores', 'read'))
 ):
     """List fornecedores"""
     try:
-        results = list_fornecedores(conn, limit=limit, offset=offset, ativo=ativo)
+        results = list_fornecedores(context.conn, limit=limit, offset=offset, ativo=ativo)
         return [FornecedorListDTO(**r) for r in results]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -251,11 +262,11 @@ async def list_fornecedores_route(
 @app.get("/api/v1/fornecedores/{fornecedor_id}", response_model=FornecedorDetailDTO)
 async def get_fornecedor_route(
     fornecedor_id: int,
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('fornecedores', 'read'))
 ):
     """Get fornecedor by ID"""
     try:
-        result = get_fornecedor(conn, fornecedor_id)
+        result = get_fornecedor(context.conn, fornecedor_id)
         if not result:
             raise HTTPException(status_code=404, detail="Fornecedor não encontrado")
         return FornecedorDetailDTO(**result)
@@ -267,11 +278,11 @@ async def get_fornecedor_route(
 @app.post("/api/v1/fornecedores", response_model=FornecedorDetailDTO, status_code=201)
 async def create_fornecedor(
     fornecedor: FornecedorCreateDTO,
-    conn: firebirdsql.Connection = Depends(get_db)
+    context: TenantContext = Depends(require_scope('fornecedores', 'write'))
 ):
     """Create novo fornecedor (POST)"""
     try:
-        cur = conn.cursor()
+        cur = context.conn.cursor()
         query = """
             INSERT INTO TBFORNECEDOR (RAZAOSOCIAL, NOMEFANTASIA, CNPJCPF, EMAIL,
                                       FONE1, ENDERECO, CEP, BAIRRO, STATUS, DATACAD)
@@ -289,16 +300,26 @@ async def create_fornecedor(
             fornecedor.bairro,
         ))
         new_id = cur.fetchone()[0]
-        conn.commit()
+        context.conn.commit()
         cur.close()
 
-        result = get_fornecedor(conn, new_id)
+        result = get_fornecedor(context.conn, new_id)
         if not result:
             raise HTTPException(status_code=500, detail="Failed to create fornecedor")
         return FornecedorDetailDTO(**result)
     except Exception as e:
-        conn.rollback()
+        context.conn.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
+# ============ ADMIN PANEL ============
+
+@app.get("/admin", include_in_schema=False)
+async def serve_admin_panel():
+    """Serve admin dashboard at /admin"""
+    admin_path = Path(__file__).parent / "admin_dashboard.html"
+    if admin_path.exists():
+        return FileResponse(admin_path, media_type="text/html")
+    return {"message": "Admin dashboard not found"}
 
 # Error handlers
 @app.exception_handler(HTTPException)
