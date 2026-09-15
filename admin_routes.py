@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 import json
 import secrets
 from passlib.context import CryptContext
-from python_jose import jwt
+from jose import jwt
 
 from platform_repository import (
     create_client, get_client, list_clients, update_client_credentials_test_status,
