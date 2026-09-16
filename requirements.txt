@@ -13,3 +13,4 @@ httpx>=0.25.0
 gunicorn>=21.0.0
 safety>=2.3.5
 pip-audit>=2.6.1
+openai>=1.0.0

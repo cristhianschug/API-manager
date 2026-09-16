@@ -25,6 +25,7 @@ from schemas import (
 from tenant_auth import get_tenant_context, require_scope, TenantContext
 from request_logging import RequestLoggingMiddleware
 from admin_routes import router as admin_router
+from ai_routes import router as ai_router
 from platform_db import init_platform_db
 
 load_dotenv('.env.local')
@@ -73,6 +74,9 @@ async def serve_admin_panel():
 
 # Include admin routes (API endpoints, not static pages)
 app.include_router(admin_router)
+
+# Include AI routes
+app.include_router(ai_router)
 
 # ============ HEALTH CHECK ============
 
