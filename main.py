@@ -1,7 +1,7 @@
 """FastAPI main application - ERP Anexar v2.0 (Multi-tenant with API Keys)"""
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -21,6 +21,7 @@ from schemas import (
     HealthDTO
 )
 from tenant_auth import get_tenant_context, require_scope, TenantContext
+from platform_repository import get_client_by_slug, get_client_all_scopes
 from request_logging import RequestLoggingMiddleware
 from admin_routes import router as admin_router
 from ai_routes import router as ai_router
@@ -75,6 +76,76 @@ app.include_router(admin_router)
 
 # Include AI routes
 app.include_router(ai_router)
+
+# resource slug → path prefix (used to filter OpenAPI spec per client)
+_RESOURCE_PATH = {
+    'clientes':    '/api/v1/clientes',
+    'produtos':    '/api/v1/produtos',
+    'pedidos':     '/api/v1/pedidos',
+    'parcelas':    '/api/v1/parcelas',
+    'fornecedores': '/api/v1/fornecedores',
+}
+
+@app.get("/api/v1/openapi/{client_slug}", include_in_schema=False)
+async def client_openapi(client_slug: str):
+    """Filtered OpenAPI spec for a specific client based on their active scopes"""
+    client = get_client_by_slug(client_slug)
+    if not client or client['status'] != 'active':
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    scopes = get_client_all_scopes(client['id'])
+    spec = dict(app.openapi())
+    spec['info'] = {**spec['info'], 'title': f"{client['name']} — API Docs"}
+
+    filtered_paths = {}
+    for path, methods in spec.get('paths', {}).items():
+        if path == '/api/v1/health':
+            filtered_paths[path] = methods
+            continue
+        matched = False
+        for resource, prefix in _RESOURCE_PATH.items():
+            if path == prefix or path.startswith(prefix + '/'):
+                perms = scopes.get(resource, {})
+                allowed = {
+                    m: op for m, op in methods.items()
+                    if (m.upper() in ('GET', 'HEAD') and perms.get('read'))
+                    or (m.upper() in ('POST', 'PUT', 'PATCH', 'DELETE') and perms.get('write'))
+                }
+                if allowed:
+                    filtered_paths[path] = allowed
+                matched = True
+                break
+        # Non-resource paths (e.g. /api/v1/ai/*) are excluded from client docs
+
+    spec['paths'] = filtered_paths
+    return JSONResponse(spec)
+
+
+@app.get("/docs/{client_slug}", include_in_schema=False)
+async def client_docs(client_slug: str):
+    """ReDoc documentation page filtered to a client's permissions"""
+    client = get_client_by_slug(client_slug)
+    if not client or client['status'] != 'active':
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <title>{client['name']} — Documentação da API</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body {{ margin: 0; padding: 0; font-family: 'Inter', sans-serif; }}
+  </style>
+</head>
+<body>
+  <redoc spec-url="/api/v1/openapi/{client_slug}" expand-responses="200,201"></redoc>
+  <script src="https://cdn.jsdelivr.net/npm/redoc/bundles/redoc.standalone.js"></script>
+</body>
+</html>"""
+    return HTMLResponse(html)
+
 
 # ============ HEALTH CHECK ============
 

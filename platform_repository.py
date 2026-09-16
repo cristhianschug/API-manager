@@ -94,6 +94,34 @@ def get_client(client_id: int) -> Optional[Dict[str, Any]]:
     finally:
         conn.close()
 
+def get_client_by_slug(slug: str) -> Optional[Dict[str, Any]]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT id, name, slug, status FROM clients WHERE slug = ?", (slug,))
+        row = cur.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+def get_client_all_scopes(client_id: int) -> Dict[str, Dict[str, bool]]:
+    """Union of scopes across all active API keys for a client"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """SELECT s.resource, MAX(s.can_read) AS can_read, MAX(s.can_write) AS can_write
+               FROM api_key_scopes s
+               JOIN api_keys k ON s.api_key_id = k.id
+               WHERE k.client_id = ? AND k.status = 'active'
+               GROUP BY s.resource""",
+            (client_id,)
+        )
+        return {row['resource']: {'read': bool(row['can_read']), 'write': bool(row['can_write'])}
+                for row in cur.fetchall()}
+    finally:
+        conn.close()
+
 def list_clients(status: str = 'active') -> List[Dict[str, Any]]:
     """List all clients, optionally filtered by status"""
     conn = get_db_connection()
