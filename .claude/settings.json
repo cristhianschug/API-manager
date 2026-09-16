@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"$HOME/.claude/projects\" -name \"*.md\" -o -name \"*.json\" 2>/dev/null | head -30)",
+      "Read(//c/Users/Cristhian Schug/.claude/projects/**)"
+    ]
+  },
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "Read|Edit|Write|Bash|Glob|Grep|PowerShell",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Você está gerando uma resposta para uma solicitação de permissão do Claude Code. A solicitação é: $ARGUMENTS\n\nResponda com um JSON contendo 'systemMessage' com uma BREVE explicação em português brasileiro do que está sendo solicitado e por quê (máximo 2 linhas). Exemplo: {\"systemMessage\": \"Permite leitura do arquivo .env para verificar variáveis de ambiente\"}",
+            "statusMessage": "Traduzindo permissão para português..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"D:\\API Anexar\\.claude\\scripts\\token_status.py\" short"
+          }
+        ]
+      }
+    ]
+  }
+}
