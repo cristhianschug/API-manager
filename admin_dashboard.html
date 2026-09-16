@@ -1,967 +1,982 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERP Anexar - Painel Admin</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-        }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anexar — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:           #0d0d10;
+  --surface:      #111115;
+  --elevated:     #1a1a20;
+  --border:       #26262e;
+  --border-hi:    #3a3a46;
+  --text:         #f0f0f4;
+  --text-2:       #9090a0;
+  --text-3:       #5a5a6a;
+  --accent:       #5e6ad2;
+  --accent-hi:    #818cf8;
+  --accent-dim:   rgba(94,106,210,.14);
+  --ok:           #22c55e;
+  --ok-dim:       rgba(34,197,94,.12);
+  --err:          #ef4444;
+  --err-dim:      rgba(239,68,68,.12);
+  --warn:         #f59e0b;
+  --warn-dim:     rgba(245,158,11,.12);
+  --r:            7px;
+  --r-sm:         5px;
+  --sw:           232px;
+  --sans:         'Inter', -apple-system, sans-serif;
+  --mono:         'SF Mono','Fira Code',monospace;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
 
-        /* Login Screen */
-        .login-screen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .login-card {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 400px;
-        }
-        .login-card h1 { margin-bottom: 30px; text-align: center; color: #667eea; }
-        .form-group {
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-        .form-group label { margin-bottom: 8px; font-weight: 600; }
-        .form-group input { padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
-        .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .btn-primary {
-            background: #667eea;
-            color: white;
-            width: 100%;
-        }
-        .btn-primary:hover { background: #5568d3; }
-        .btn-danger { background: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; }
-        .btn-secondary { background: #6b7280; color: white; }
-        .btn-secondary:hover { background: #4b5563; }
-        .btn-sm { padding: 8px 12px; font-size: 12px; }
+/* ── Login ── */
+#login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; }
+.lcard { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:40px; width:100%; max-width:360px; }
+.llogo { display:flex; align-items:center; gap:10px; margin-bottom:32px; }
+.lmark { width:30px; height:30px; background:var(--accent); border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; color:#fff; flex-shrink:0; }
+.lname { font-size:17px; font-weight:600; }
+.lcard h1 { font-size:19px; font-weight:600; margin-bottom:4px; }
+.lsub { color:var(--text-2); font-size:13px; margin-bottom:28px; }
 
-        /* Header */
-        .header {
-            background: #1f2937;
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 { font-size: 24px; }
-        .header .user-info { display: flex; align-items: center; gap: 20px; }
-        .btn-logout { background: #ef4444; color: white; padding: 8px 16px; border-radius: 5px; cursor: pointer; border: none; }
+/* ── Fields ── */
+.field { margin-bottom:14px; }
+.field label { display:block; font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:5px; }
+.field input,.field select,.field textarea {
+  width:100%; background:var(--elevated); border:1px solid var(--border);
+  border-radius:var(--r-sm); color:var(--text); font-size:13px; font-family:var(--sans);
+  padding:8px 11px; outline:none; transition:border-color .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus {
+  border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim);
+}
+.field .hint { font-size:11.5px; color:var(--text-3); margin-top:4px; }
+.form-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+.form-row .field { margin-bottom:0; }
 
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-        .tab-button {
-            padding: 12px 24px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            color: #6b7280;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-        }
-        .tab-button.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+/* ── Buttons ── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border:none; border-radius:var(--r-sm); font-size:13px; font-weight:500; font-family:var(--sans); cursor:pointer; transition:all .12s; white-space:nowrap; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent-hi); }
+.btn-ghost { background:transparent; color:var(--text-2); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--elevated); color:var(--text); }
+.btn-danger { background:var(--err-dim); color:var(--err); border:1px solid transparent; }
+.btn-danger:hover { background:rgba(239,68,68,.22); }
+.btn-sm { padding:4px 9px; font-size:12px; }
+.btn:disabled { opacity:.38; cursor:not-allowed; }
+.btn-full { width:100%; justify-content:center; }
 
-        /* Cards */
-        .card {
-            background: white;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .card h2 { font-size: 18px; margin-bottom: 20px; color: #1f2937; }
-        .card h3 { font-size: 16px; margin-bottom: 15px; color: #374151; }
+/* ── Layout ── */
+#app { display:none; height:100vh; overflow:hidden; }
+.layout { display:flex; height:100vh; }
 
-        /* Metrics */
-        .metrics {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .metric-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border-left: 4px solid #667eea;
-        }
-        .metric-value { font-size: 32px; font-weight: bold; color: #667eea; }
-        .metric-label { font-size: 14px; color: #6b7280; margin-top: 8px; }
+/* ── Sidebar ── */
+#sidebar { width:var(--sw); background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
+.sb-logo { padding:18px 14px 14px; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--border); }
+.sb-mark { width:27px; height:27px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0; }
+.sb-name { font-size:14.5px; font-weight:600; }
+.sb-nav { padding:8px; flex:1; }
+.nav-label { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-3); padding:10px 8px 4px; }
+.nav-item { display:flex; align-items:center; gap:8px; width:100%; padding:7px 9px; border-radius:var(--r-sm); background:transparent; border:none; color:var(--text-2); font-size:13px; font-family:var(--sans); cursor:pointer; text-align:left; transition:all .12s; }
+.nav-item:hover { background:var(--elevated); color:var(--text); }
+.nav-item.active { background:var(--accent-dim); color:var(--accent-hi); font-weight:500; }
+.nav-icon { font-size:14px; width:16px; text-align:center; }
+.sb-foot { padding:12px 14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+.sb-user { flex:1; font-size:12.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th {
-            background: #f3f4f6;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 12px;
-            color: #374151;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 13px;
-        }
-        tr:hover { background: #f9fafb; }
+/* ── Main ── */
+#main { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+.view { display:none; padding:28px 32px; }
+.view.active { display:block; }
+.view-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:22px; gap:12px; }
+.view-title { font-size:17px; font-weight:600; }
+.view-sub { font-size:12.5px; color:var(--text-2); margin-top:2px; }
 
-        /* Forms */
-        .form-section {
-            background: white;
-            padding: 24px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .form-group-full { grid-column: 1 / -1; }
+/* ── KPI grid ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:22px; }
+.kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; }
+.kpi-lbl { font-size:11px; color:var(--text-3); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
+.kpi-val { font-size:26px; font-weight:600; margin-top:4px; letter-spacing:-.02em; }
 
-        /* Status badge */
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .badge-active { background: #d1fae5; color: #047857; }
-        .badge-revoked { background: #fee2e2; color: #dc2626; }
-        .badge-inactive { background: #fef3c7; color: #b45309; }
+/* ── Table ── */
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+.table-wrap table { width:100%; border-collapse:collapse; }
+.table-wrap th { background:var(--elevated); padding:9px 14px; text-align:left; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); border-bottom:1px solid var(--border); }
+.table-wrap td { padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; }
+.table-wrap tr:last-child td { border-bottom:none; }
+.table-wrap tr:hover td { background:rgba(255,255,255,.018); }
+.empty-state { text-align:center; padding:44px 20px; color:var(--text-3); }
+.empty-state p { margin-top:6px; font-size:12.5px; }
 
-        /* Alerts */
-        .alert {
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        .alert.show { display: block; }
-        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #86efac; }
-        .alert-info { background: #dbeafe; color: #0c4a6e; border: 1px solid #7dd3fc; }
+/* ── Badges ── */
+.badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; }
+.badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.b-ok   { background:var(--ok-dim);  color:var(--ok); }
+.b-err  { background:var(--err-dim); color:var(--err); }
+.b-warn { background:var(--warn-dim);color:var(--warn); }
+.s-2xx  { display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; font-family:var(--mono); background:var(--ok-dim);   color:var(--ok); }
+.s-4xx  { display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; font-family:var(--mono); background:var(--warn-dim); color:var(--warn); }
+.s-5xx  { display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; font-family:var(--mono); background:var(--err-dim);  color:var(--err); }
 
-        /* Loading */
-        .loading { display: none; text-align: center; padding: 20px; }
-        .loading.show { display: block; }
-        .spinner {
-            border: 3px solid #e5e7eb;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+/* ── Toast ── */
+#toast-bar { position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+.toast { padding:11px 15px; border-radius:var(--r-sm); font-size:13px; max-width:320px; pointer-events:auto; animation:tin .2s ease; }
+@keyframes tin { from { transform:translateX(16px); opacity:0; } }
+.t-ok  { background:var(--ok-dim);  color:var(--ok);  border:1px solid rgba(34,197,94,.2); }
+.t-err { background:var(--err-dim); color:var(--err); border:1px solid rgba(239,68,68,.2); }
+.t-info { background:var(--accent-dim); color:var(--accent-hi); border:1px solid rgba(94,106,210,.2); }
 
-        /* Sections */
-        .section-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #1f2937;
-        }
+/* ── Modal ── */
+.backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:900; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+.backdrop.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:26px; width:90%; max-width:500px; max-height:88vh; overflow-y:auto; animation:min .18s ease; }
+.modal-lg { max-width:600px; }
+@keyframes min { from { transform:scale(.96); opacity:0; } }
+.modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+.modal-ttl { font-size:15px; font-weight:600; }
+.modal-x { width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:6px; background:transparent; border:none; color:var(--text-3); cursor:pointer; font-size:17px; }
+.modal-x:hover { background:var(--elevated); color:var(--text); }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-        }
-        .modal.show { display: flex; align-items: center; justify-content: center; }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .modal-header h2 { margin: 0; }
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #6b7280;
-        }
+/* ── Stepper ── */
+.stepper { display:flex; align-items:center; margin-bottom:26px; }
+.step-item { display:flex; align-items:center; flex:1; }
+.step-item:last-child { flex:none; }
+.step-dot { width:22px; height:22px; border-radius:50%; border:2px solid var(--border-hi); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; color:var(--text-3); flex-shrink:0; transition:all .2s; }
+.step-item.s-active .step-dot { border-color:var(--accent); background:var(--accent); color:#fff; }
+.step-item.s-done .step-dot   { border-color:var(--ok); background:var(--ok); color:#fff; }
+.step-line { flex:1; height:1px; background:var(--border); margin:0 6px; }
+.step-item.s-done .step-line  { background:var(--ok); }
+.step-lbl { font-size:10.5px; color:var(--text-3); margin-left:5px; }
+.step-item.s-active .step-lbl { color:var(--text); font-weight:500; }
 
-        @media (max-width: 768px) {
-            .container { padding: 15px; }
-            .header { flex-direction: column; gap: 15px; text-align: center; }
-            .metrics { grid-template-columns: 1fr; }
-            .tabs { flex-wrap: wrap; }
-            .form-row { grid-template-columns: 1fr; }
-        }
-    </style>
+/* ── Step pane (show/hide) ── */
+.step-pane { display:none; }
+.step-pane.active { display:block; }
+.step-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:22px; }
+
+/* ── Permission matrix ── */
+.perm-table { width:100%; border-collapse:collapse; }
+.perm-table th,.perm-table td { padding:9px 12px; border-bottom:1px solid var(--border); }
+.perm-table th { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); background:var(--elevated); }
+.perm-table td { font-size:13px; }
+.perm-table tr:last-child td { border-bottom:none; }
+.toggle { position:relative; width:34px; height:18px; display:inline-block; }
+.toggle input { opacity:0; width:0; height:0; }
+.ttrack { position:absolute; inset:0; border-radius:20px; background:var(--border-hi); cursor:pointer; transition:background .18s; }
+.ttrack::after { content:''; position:absolute; left:3px; top:3px; width:12px; height:12px; border-radius:50%; background:#fff; transition:transform .18s; }
+.toggle input:checked + .ttrack { background:var(--accent); }
+.toggle input:checked + .ttrack::after { transform:translateX(16px); }
+.toggle input:focus-visible + .ttrack { outline:2px solid var(--accent); outline-offset:2px; }
+
+/* ── Code block ── */
+.code-blk { background:var(--bg); border:1px solid var(--border); border-radius:var(--r-sm); padding:13px; font-family:var(--mono); font-size:12px; word-break:break-all; color:var(--accent-hi); }
+
+/* ── Warn box ── */
+.warn-box { background:var(--warn-dim); border:1px solid rgba(245,158,11,.22); border-radius:var(--r-sm); padding:11px 13px; font-size:13px; color:var(--warn); margin-bottom:14px; }
+
+/* ── Divider ── */
+hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
+
+/* ── Filter bar ── */
+.filter-bar { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:flex-end; }
+.filter-bar .field { margin:0; }
+.filter-bar select { min-width:130px; }
+
+/* ── Pagination ── */
+.pager { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--text-3); }
+
+/* ── Info grid ── */
+.info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:18px; }
+.ii-lbl { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); }
+.ii-val { font-size:13px; margin-top:2px; }
+
+/* ── Inline actions ── */
+.row-actions { display:flex; gap:5px; }
+
+/* ── Docs link ── */
+.docs-link { font-size:12px; color:var(--accent-hi); text-decoration:none; }
+.docs-link:hover { text-decoration:underline; }
+
+/* ── Responsive ── */
+@media (max-width:768px) {
+  #sidebar { display:none; }
+  .view { padding:16px; }
+  .kpi-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
 </head>
 <body>
 
-<!-- Login Screen -->
-<div id="loginScreen" class="login-screen">
-    <div class="login-card">
-        <h1>🔐 Admin Login</h1>
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="username">Usuário</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Senha</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Entrar</button>
-        </form>
-        <div id="loginError" class="alert alert-error" style="margin-top: 20px;"></div>
-    </div>
+<div id="toast-bar" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ── Login ──────────────────────────────── -->
+<div id="login-screen">
+  <div class="lcard">
+    <div class="llogo"><div class="lmark">A</div><span class="lname">Anexar</span></div>
+    <h1>Entrar no painel</h1>
+    <p class="lsub">Acesso restrito a administradores</p>
+    <form id="login-form" novalidate>
+      <div class="field"><label for="l-user">Usuário</label><input type="text" id="l-user" autocomplete="username" required></div>
+      <div class="field"><label for="l-pass">Senha</label><input type="password" id="l-pass" autocomplete="current-password" required></div>
+      <div id="l-err" style="color:var(--err);font-size:12.5px;margin-bottom:12px;display:none"></div>
+      <button class="btn btn-primary btn-full" type="submit">Entrar</button>
+    </form>
+  </div>
 </div>
 
-<!-- Main App (hidden until logged in) -->
-<div id="mainApp" style="display: none;">
-    <!-- Header -->
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>ERP Anexar - Painel Admin</h1>
-                <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Gerenciar clientes, API keys e métricas</p>
-            </div>
-            <div class="user-info">
-                <div>Conectado como <strong id="loggedUsername"></strong></div>
-                <button class="btn-logout" onclick="logout()">Sair</button>
-            </div>
+<!-- ── App ────────────────────────────────── -->
+<div id="app">
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <nav id="sidebar" aria-label="Navegação principal">
+      <div class="sb-logo"><div class="sb-mark">A</div><span class="sb-name">Anexar Admin</span></div>
+      <div class="sb-nav">
+        <div class="nav-label">Geral</div>
+        <button class="nav-item active" data-view="overview"  onclick="nav('overview')"><span class="nav-icon">◈</span> Overview</button>
+        <button class="nav-item"        data-view="clientes"  onclick="nav('clientes')"><span class="nav-icon">◻</span> Clientes</button>
+        <div class="nav-label" style="margin-top:6px">Sistema</div>
+        <button class="nav-item"        data-view="metricas"  onclick="nav('metricas')"><span class="nav-icon">▦</span> Métricas</button>
+        <button class="nav-item"        data-view="logs"      onclick="nav('logs')"><span class="nav-icon">≡</span> Logs</button>
+      </div>
+      <div class="sb-foot">
+        <span class="sb-user" id="sb-username"></span>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <main id="main" role="main">
+
+      <!-- View: Overview -->
+      <section id="view-overview" class="view active">
+        <div class="view-head">
+          <div><div class="view-title">Overview</div><div class="view-sub">Resumo da plataforma</div></div>
         </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="container">
-        <div id="alertContainer"></div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-button active" onclick="switchTab('clientes')">Clientes</button>
-            <button class="tab-button" onclick="switchTab('metricas')">Métricas</button>
-            <button class="tab-button" onclick="switchTab('logs')">Logs</button>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="kpi-lbl">Clientes</div><div class="kpi-val" id="kpi-clients">—</div></div>
+          <div class="kpi"><div class="kpi-lbl">Requisições (24h)</div><div class="kpi-val" id="kpi-reqs">—</div></div>
+          <div class="kpi"><div class="kpi-lbl">Erros (24h)</div><div class="kpi-val" id="kpi-errs">—</div></div>
+          <div class="kpi"><div class="kpi-lbl">Taxa de Erro</div><div class="kpi-val" id="kpi-rate">—</div></div>
         </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rota</th><th>Requisições</th></tr></thead>
+            <tbody id="ov-routes"></tbody>
+          </table>
+        </div>
+      </section>
 
-        <!-- Clientes Tab -->
-        <div id="clientes-tab" class="tab-content active">
-            <!-- New Client Form -->
-            <div class="form-section">
-                <h2>Cadastrar Novo Cliente</h2>
-                <form id="newClientForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Nome</label>
-                            <input type="text" id="newClientName" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Slug (identificador)</label>
-                            <input type="text" id="newClientSlug" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group form-group-full">
-                            <label>Arquivo confrede.ini</label>
-                            <input type="file" id="newClientFile" accept=".ini" required>
-                            <small style="color: #6b7280; margin-top: 5px;">Selecione o arquivo de configuração do Firebird</small>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Cadastrar Cliente</button>
-                </form>
-            </div>
-
-            <!-- Clients List -->
-            <div class="card">
-                <h2>Clientes Cadastrados</h2>
-                <div id="clientsLoading" class="loading show">
-                    <div class="spinner"></div>
-                </div>
-                <div id="clientsList" style="display: none;">
-                    <table id="clientsTable">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Slug</th>
-                                <th>Status</th>
-                                <th>Criado em</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="clientsBody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Client Detail (shown when client is selected) -->
-            <div id="clientDetailCard" class="card" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>Detalhes do Cliente</h2>
-                    <button class="btn btn-secondary btn-sm" onclick="closeClientDetail()">Fechar</button>
-                </div>
-
-                <div id="clientDetailContent"></div>
-
-                <!-- Keys Management -->
-                <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e5e7eb;">
-                    <h3>Gerenciar API Keys</h3>
-
-                    <!-- New Key Form -->
-                    <div style="background: #f9fafb; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                        <h4 style="margin-bottom: 15px;">Gerar Nova API Key</h4>
-                        <form id="newKeyForm">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Nome da Key</label>
-                                    <input type="text" id="newKeyName" placeholder="Ex: Sistema X" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group form-group-full">
-                                    <label>Escopos (Selecione o que a key pode acessar)</label>
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
-                                        <div>
-                                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
-                                                <input type="checkbox" name="scope" value="clientes:read" checked> Clientes (leitura)
-                                            </label>
-                                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; margin-top: 5px;">
-                                                <input type="checkbox" name="scope" value="clientes:write"> Clientes (escrita)
-                                            </label>
-                                        </div>
-                                        <div>
-                                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
-                                                <input type="checkbox" name="scope" value="produtos:read" checked> Produtos (leitura)
-                                            </label>
-                                        </div>
-                                        <div>
-                                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
-                                                <input type="checkbox" name="scope" value="pedidos:read" checked> Pedidos (leitura)
-                                            </label>
-                                        </div>
-                                        <div>
-                                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
-                                                <input type="checkbox" name="scope" value="parcelas:read" checked> Parcelas (leitura)
-                                            </label>
-                                        </div>
-                                        <div>
-                                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
-                                                <input type="checkbox" name="scope" value="fornecedores:read" checked> Fornecedores (leitura)
-                                            </label>
-                                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; margin-top: 5px;">
-                                                <input type="checkbox" name="scope" value="fornecedores:write"> Fornecedores (escrita)
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Gerar API Key</button>
-                        </form>
-                    </div>
-
-                    <!-- Keys List -->
-                    <div>
-                        <h4 style="margin-bottom: 15px;">API Keys Ativas</h4>
-                        <div id="keysLoading" class="loading">
-                            <div class="spinner"></div>
-                        </div>
-                        <table id="keysTable" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Prefixo</th>
-                                    <th>Status</th>
-                                    <th>Criada em</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="keysBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+      <!-- View: Clientes -->
+      <section id="view-clientes" class="view">
+        <div class="view-head">
+          <div><div class="view-title">Clientes</div><div class="view-sub">Gerencie acessos e API keys</div></div>
+          <button class="btn btn-primary" onclick="openNewClientModal()">+ Novo cliente</button>
         </div>
 
-        <!-- Métricas Tab -->
-        <div id="metricas-tab" class="tab-content">
-            <div class="card">
-                <h2>Métricas de API</h2>
-                <div class="metrics">
-                    <div class="metric-card">
-                        <div class="metric-value" id="totalRequests">-</div>
-                        <div class="metric-label">Requisições Totais (24h)</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="errorCount">-</div>
-                        <div class="metric-label">Erros (4xx/5xx)</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="errorRate">-</div>
-                        <div class="metric-label">Taxa de Erro</div>
-                    </div>
-                </div>
-
-                <h3 style="margin-top: 30px;">Rotas Mais Usadas</h3>
-                <table id="topRoutesTable">
-                    <thead>
-                        <tr>
-                            <th>Rota</th>
-                            <th>Requisições</th>
-                        </tr>
-                    </thead>
-                    <tbody id="topRoutesBody"></tbody>
-                </table>
-            </div>
+        <div class="table-wrap" id="clients-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Criado em</th><th>Docs</th><th>Ações</th></tr></thead>
+            <tbody id="clients-body">
+              <tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
         </div>
 
-        <!-- Logs Tab -->
-        <div id="logs-tab" class="tab-content">
-            <div class="card">
-                <h2>Log de Requisições</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <div class="form-group">
-                        <label>Filtrar por Cliente</label>
-                        <select id="logsClientFilter" onchange="loadLogs()">
-                            <option value="">Todos</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Filtrar por Método</label>
-                        <select id="logsMethodFilter" onchange="loadLogs()">
-                            <option value="">Todos</option>
-                            <option value="GET">GET</option>
-                            <option value="POST">POST</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Filtrar por Status</label>
-                        <select id="logsStatusFilter" onchange="loadLogs()">
-                            <option value="">Todos</option>
-                            <option value="200">200 OK</option>
-                            <option value="400">4xx (Erro Cliente)</option>
-                            <option value="500">5xx (Erro Servidor)</option>
-                        </select>
-                    </div>
-                </div>
-                <table id="logsTable">
-                    <thead>
-                        <tr>
-                            <th>Data/Hora</th>
-                            <th>Método</th>
-                            <th>Path</th>
-                            <th>Status</th>
-                            <th>Duração (ms)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logsBody"></tbody>
-                </table>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-                    <button class="btn btn-secondary btn-sm" id="logsPrevBtn" onclick="prevLogsPage()">Anterior</button>
-                    <span id="logsPageInfo"></span>
-                    <button class="btn btn-secondary btn-sm" id="logsNextBtn" onclick="nextLogsPage()">Próximo</button>
-                </div>
+        <!-- Client detail panel -->
+        <div id="client-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+            <div style="font-size:15px;font-weight:600" id="panel-name">—</div>
+            <button class="btn btn-ghost btn-sm" onclick="closePanel()">Fechar</button>
+          </div>
+
+          <div class="info-grid" id="panel-info"></div>
+
+          <hr>
+
+          <!-- New key form -->
+          <div style="margin-bottom:18px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:12px">Gerar nova API Key</div>
+            <div class="form-row" style="align-items:flex-end">
+              <div class="field"><label>Nome da key</label><input type="text" id="key-name" placeholder="Ex: Integração ERP"></div>
+              <div>
+                <button class="btn btn-primary" onclick="createKey()">Gerar</button>
+              </div>
             </div>
+            <div style="margin-top:12px">
+              <div style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:8px">Permissões</div>
+              <table class="perm-table" id="new-key-perms">
+                <thead><tr><th>Recurso</th><th>Leitura</th><th>Escrita</th></tr></thead>
+                <tbody id="new-key-perms-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- Keys list -->
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">API Keys</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>Prefixo</th><th>Scopes</th><th>Status</th><th>Último uso</th><th>Ações</th></tr></thead>
+              <tbody id="keys-body">
+                <tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-    </div>
+      </section>
+
+      <!-- View: Métricas -->
+      <section id="view-metricas" class="view">
+        <div class="view-head">
+          <div><div class="view-title">Métricas</div><div class="view-sub">Atividade da API nas últimas 24h</div></div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="kpi-lbl">Total de requisições</div><div class="kpi-val" id="m-total">—</div></div>
+          <div class="kpi"><div class="kpi-lbl">Erros</div><div class="kpi-val" id="m-errs">—</div></div>
+          <div class="kpi"><div class="kpi-lbl">Taxa de erro</div><div class="kpi-val" id="m-rate">—</div></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rota</th><th>Requisições</th></tr></thead>
+            <tbody id="m-routes"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- View: Logs -->
+      <section id="view-logs" class="view">
+        <div class="view-head">
+          <div><div class="view-title">Logs</div><div class="view-sub">Histórico de requisições</div></div>
+        </div>
+        <div class="filter-bar">
+          <div class="field"><label>Cliente</label><select id="log-client" onchange="fetchLogs()"><option value="">Todos</option></select></div>
+          <div class="field"><label>Método</label>
+            <select id="log-method" onchange="fetchLogs()">
+              <option value="">Todos</option>
+              <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option>
+            </select>
+          </div>
+          <div class="field"><label>Status</label>
+            <select id="log-status" onchange="fetchLogs()">
+              <option value="">Todos</option>
+              <option value="200">2xx OK</option>
+              <option value="400">4xx Erro</option>
+              <option value="500">5xx Falha</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Método</th><th>Path</th><th>Status</th><th>ms</th></tr></thead>
+            <tbody id="logs-body">
+              <tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+          <div class="pager">
+            <button class="btn btn-ghost btn-sm" id="log-prev" onclick="logsPage--;fetchLogs()" disabled>← Anterior</button>
+            <span id="log-info" style="font-size:12px;color:var(--text-3)"></span>
+            <button class="btn btn-ghost btn-sm" id="log-next" onclick="logsPage++;fetchLogs()" disabled>Próximo →</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
 </div>
 
-<!-- Modal: Show Generated Key -->
-<div id="keyModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Nova API Key Gerada</h2>
-            <button class="modal-close" onclick="closeKeyModal()">&times;</button>
-        </div>
-        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
-            <strong>⚠️ Importante:</strong> Esta é a única vez que você verá a chave completa. Guarde-a em um local seguro!
-        </div>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; word-break: break-all; font-family: monospace; font-size: 12px;" id="keyModalContent"></div>
-        <button class="btn btn-primary" onclick="copyKeyToClipboard()">Copiar para Clipboard</button>
-        <button class="btn btn-secondary" onclick="closeKeyModal()" style="margin-left: 10px;">Fechar</button>
+<!-- ── Modal: Novo Cliente (multi-step) ─── -->
+<div class="backdrop" id="new-client-modal" role="dialog" aria-modal="true" aria-labelledby="nc-title">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <span class="modal-ttl" id="nc-title">Cadastrar novo cliente</span>
+      <button class="modal-x" onclick="closeNewClientModal()" aria-label="Fechar">×</button>
     </div>
+
+    <!-- Stepper -->
+    <div class="stepper" id="stepper" aria-label="Progresso">
+      <div class="step-item s-active" data-step="1"><div class="step-dot">1</div><span class="step-lbl">Dados</span><div class="step-line"></div></div>
+      <div class="step-item" data-step="2"><div class="step-dot">2</div><span class="step-lbl">Conexão</span><div class="step-line"></div></div>
+      <div class="step-item" data-step="3"><div class="step-dot">3</div><span class="step-lbl">Permissões</span><div class="step-line"></div></div>
+      <div class="step-item" data-step="4"><div class="step-dot">4</div><span class="step-lbl">API Key</span><div class="step-line"></div></div>
+      <div class="step-item" data-step="5"><div class="step-dot">5</div><span class="step-lbl">Concluído</span></div>
+    </div>
+
+    <!-- Step 1: Dados -->
+    <div class="step-pane active" id="sp-1">
+      <div class="form-row">
+        <div class="field"><label>Nome do cliente *</label><input type="text" id="nc-name" placeholder="Ex: Empresa ABC"></div>
+        <div class="field"><label>Slug (URL) *</label><input type="text" id="nc-slug" placeholder="ex: empresa-abc"></div>
+      </div>
+      <p class="hint" style="font-size:11.5px;color:var(--text-3);margin-top:4px">O slug identifica o cliente na URL da documentação: <code>/docs/{slug}</code></p>
+      <div class="step-actions"><button class="btn btn-primary" onclick="ncStep(2)">Próximo →</button></div>
+    </div>
+
+    <!-- Step 2: Conexão -->
+    <div class="step-pane" id="sp-2">
+      <div class="field">
+        <label>Arquivo confrede.ini *</label>
+        <input type="file" id="nc-file" accept=".ini">
+        <p class="hint">Selecione o arquivo de configuração do Firebird (confrede.ini)</p>
+      </div>
+      <div class="step-actions">
+        <button class="btn btn-ghost" onclick="ncStep(1)">← Voltar</button>
+        <button class="btn btn-primary" onclick="ncStep(3)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Permissões -->
+    <div class="step-pane" id="sp-3">
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">Configure as permissões padrão para a primeira API Key deste cliente.</p>
+      <table class="perm-table">
+        <thead><tr><th>Recurso</th><th>Leitura</th><th>Escrita</th></tr></thead>
+        <tbody id="nc-perms-body"></tbody>
+      </table>
+      <div class="step-actions">
+        <button class="btn btn-ghost" onclick="ncStep(2)">← Voltar</button>
+        <button class="btn btn-primary" onclick="ncStep(4)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: API Key -->
+    <div class="step-pane" id="sp-4">
+      <div class="field"><label>Nome da API Key *</label><input type="text" id="nc-key-name" placeholder="Ex: Produção" value="default"></div>
+      <div class="step-actions">
+        <button class="btn btn-ghost" onclick="ncStep(3)">← Voltar</button>
+        <button class="btn btn-primary" onclick="submitNewClient()">Criar cliente</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Concluído -->
+    <div class="step-pane" id="sp-5">
+      <div class="warn-box">⚠ Copie a API Key agora — ela não será exibida novamente.</div>
+      <div class="code-blk" id="nc-result-key"></div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="copyKey('nc-result-key')">Copiar key</button>
+        <a id="nc-docs-link" class="btn btn-ghost" href="#" target="_blank">Ver documentação →</a>
+      </div>
+      <div class="step-actions" style="margin-top:18px">
+        <button class="btn btn-ghost" onclick="closeNewClientModal();loadClients()">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Mostrar API Key ─────────────── -->
+<div class="backdrop" id="key-modal" role="dialog" aria-modal="true" aria-labelledby="km-title">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-ttl" id="km-title">API Key gerada</span>
+      <button class="modal-x" onclick="closeKeyModal()" aria-label="Fechar">×</button>
+    </div>
+    <div class="warn-box">⚠ Copie agora — esta é a única vez que você verá a chave completa.</div>
+    <div class="code-blk" id="key-modal-val"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" onclick="copyKey('key-modal-val')">Copiar</button>
+      <button class="btn btn-ghost" onclick="closeKeyModal()">Fechar</button>
+    </div>
+  </div>
 </div>
 
 <script>
-const API_BASE = '/admin/api';
+'use strict';
+const API = '/admin/api';
+const RESOURCES = ['clientes','produtos','pedidos','parcelas','fornecedores'];
 
-// ============ LOGIN ============
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
+// ── Helpers ────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
+function toast(msg, type = 'info') {
+  const bar = document.getElementById('toast-bar');
+  const el = document.createElement('div');
+  el.className = `toast t-${type}`;
+  el.textContent = msg;
+  bar.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
 
-    try {
-        const resp = await fetch(`${API_BASE}/login`, {
-            method: 'POST',
-            body: formData,
-        });
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, opts);
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body.detail || `HTTP ${r.status}`);
+  }
+  return r.json().catch(() => null);
+}
 
-        if (!resp.ok) {
-            throw new Error('Invalid credentials');
-        }
+function fmt(d) { return d ? new Date(d).toLocaleString('pt-BR') : '—'; }
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('pt-BR') : '—'; }
 
-        showAlert('Logged in successfully!', 'success');
-        setTimeout(() => {
-            showLoginScreen(false);
-            loadClients();
-            document.getElementById('loggedUsername').textContent = username;
-        }, 500);
-    } catch (err) {
-        showAlert(`Login failed: ${err.message}`, 'error', true);
-    }
+// ── Session / Auth ─────────────────────────────────────────────────────────
+async function checkSession() {
+  try {
+    await api('/clients');
+    showApp(true);
+  } catch {
+    showApp(false);
+  }
+}
+
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = document.getElementById('l-err');
+  err.style.display = 'none';
+  const fd = new FormData();
+  fd.append('username', document.getElementById('l-user').value);
+  fd.append('password', document.getElementById('l-pass').value);
+  try {
+    await fetch(`${API}/login`, { method: 'POST', body: fd }).then(r => {
+      if (!r.ok) throw new Error();
+    });
+    showApp(true);
+  } catch {
+    err.textContent = 'Credenciais inválidas.';
+    err.style.display = 'block';
+  }
 });
 
 function logout() {
-    fetch(`${API_BASE}/logout`, { method: 'POST' }).then(() => {
-        showLoginScreen(true);
+  fetch(`${API}/logout`, { method: 'POST' }).finally(() => showApp(false));
+}
+
+function showApp(show) {
+  document.getElementById('login-screen').style.display = show ? 'none' : 'flex';
+  document.getElementById('app').style.display = show ? 'block' : 'none';
+  document.getElementById('l-pass').value = '';
+  if (show) {
+    const u = document.getElementById('l-user').value || 'admin';
+    document.getElementById('sb-username').textContent = u;
+    loadOverview();
+    loadClients();
+  }
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function nav(view) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
+  if (view === 'metricas') loadMetrics();
+  if (view === 'logs') { initLogFilters(); fetchLogs(); }
+}
+
+// ── Overview ───────────────────────────────────────────────────────────────
+async function loadOverview() {
+  try {
+    const [clients, metrics] = await Promise.all([
+      api('/clients'),
+      api('/metrics'),
+    ]);
+    document.getElementById('kpi-clients').textContent = clients.length;
+    document.getElementById('kpi-reqs').textContent = metrics.total_requests ?? '—';
+    document.getElementById('kpi-errs').textContent = metrics.error_count ?? '—';
+    document.getElementById('kpi-rate').textContent =
+      metrics.error_rate != null ? metrics.error_rate.toFixed(1) + '%' : '—';
+    const tbody = document.getElementById('ov-routes');
+    tbody.innerHTML = '';
+    (metrics.top_routes || []).forEach(r => {
+      const tr = tbody.insertRow();
+      const td1 = tr.insertCell(); td1.appendChild(document.createTextNode(r.path));
+      const td2 = tr.insertCell(); td2.appendChild(document.createTextNode(r.count));
     });
+    if (!tbody.rows.length) tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Sem dados</td></tr>';
+  } catch (e) { toast('Erro ao carregar overview: ' + e.message, 'err'); }
 }
 
-function showLoginScreen(show) {
-    document.getElementById('loginScreen').style.display = show ? 'flex' : 'none';
-    document.getElementById('mainApp').style.display = show ? 'none' : 'block';
-}
+// ── Clients list ───────────────────────────────────────────────────────────
+let clientsCache = [];
 
-// ============ TAB SWITCHING ============
-function switchTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
-    document.getElementById(`${tab}-tab`).classList.add('active');
-    event.target.classList.add('active');
-
-    if (tab === 'metricas') loadMetrics();
-    if (tab === 'logs') loadLogs();
-}
-
-// ============ ALERTS ============
-function showAlert(message, type = 'info', forceElement = false) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} show`;
-    alertDiv.textContent = message;
-
-    if (forceElement && type === 'error') {
-        document.getElementById('loginError').textContent = message;
-        document.getElementById('loginError').classList.add('show');
-    } else {
-        document.getElementById('alertContainer').appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 5000);
-    }
-}
-
-// ============ CLIENTS ============
 async function loadClients() {
-    document.getElementById('clientsLoading').classList.add('show');
-    try {
-        const resp = await fetch(`${API_BASE}/clients`);
-        if (!resp.ok) throw new Error('Failed to load clients');
-
-        const clients = await resp.json();
-        const tbody = document.getElementById('clientsBody');
-        tbody.innerHTML = '';
-
-        clients.forEach(client => {
-            const row = tbody.insertRow();
-            row.innerHTML = `
-                <td>${client.name}</td>
-                <td>${client.slug}</td>
-                <td><span class="badge badge-active">${client.status}</span></td>
-                <td>${new Date(client.created_at).toLocaleString()}</td>
-                <td><button class="btn btn-secondary btn-sm" onclick="viewClientDetail(${client.id})">Gerenciar Keys</button></td>
-            `;
-        });
-
-        // Populate client filter for logs
-        const filter = document.getElementById('logsClientFilter');
-        const currentValue = filter.value;
-        filter.innerHTML = '<option value="">Todos</option>';
-        clients.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name;
-            filter.appendChild(opt);
-        });
-        filter.value = currentValue;
-
-        document.getElementById('clientsLoading').classList.remove('show');
-        document.getElementById('clientsList').style.display = 'block';
-    } catch (err) {
-        showAlert(`Error loading clients: ${err.message}`, 'error');
-        document.getElementById('clientsLoading').classList.remove('show');
-    }
+  try {
+    clientsCache = await api('/clients');
+    renderClients(clientsCache);
+    populateLogClientFilter();
+  } catch (e) { toast('Erro ao carregar clientes: ' + e.message, 'err'); }
 }
 
-// ============ CLIENT DETAIL & KEYS ============
+function renderClients(clients) {
+  const tbody = document.getElementById('clients-body');
+  tbody.innerHTML = '';
+  if (!clients.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum cliente cadastrado<p>Clique em "Novo cliente" para começar</p></td></tr>';
+    return;
+  }
+  clients.forEach(c => {
+    const tr = tbody.insertRow();
+    const tdName  = tr.insertCell(); tdName.textContent  = c.name;
+    const tdSlug  = tr.insertCell(); tdSlug.innerHTML    = `<code>${esc(c.slug)}</code>`;
+    const tdSt    = tr.insertCell(); tdSt.innerHTML      = `<span class="badge ${c.status === 'active' ? 'b-ok' : 'b-warn'}">${esc(c.status)}</span>`;
+    const tdAt    = tr.insertCell(); tdAt.textContent    = fmtDate(c.created_at);
+    const tdDocs  = tr.insertCell();
+    const docsA   = document.createElement('a');
+    docsA.className = 'docs-link'; docsA.target = '_blank';
+    docsA.href = `/docs/${encodeURIComponent(c.slug)}`; docsA.textContent = '/docs';
+    tdDocs.appendChild(docsA);
+    const tdAct = tr.insertCell(); tdAct.className = 'row-actions';
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm'; btn.textContent = 'Gerenciar keys';
+    btn.onclick = () => openPanel(c.id);
+    tdAct.appendChild(btn);
+  });
+}
+
+// ── Client panel ───────────────────────────────────────────────────────────
 let currentClientId = null;
 
-async function viewClientDetail(clientId) {
-    currentClientId = clientId;
+async function openPanel(clientId) {
+  currentClientId = clientId;
+  const panel = document.getElementById('client-panel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    try {
-        const resp = await fetch(`${API_BASE}/clients/${clientId}`);
-        if (!resp.ok) throw new Error('Failed to load client');
-
-        const client = await resp.json();
-
-        const detail = document.getElementById('clientDetailContent');
-        detail.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                <div>
-                    <strong>Nome:</strong> ${client.name}
-                </div>
-                <div>
-                    <strong>Slug:</strong> ${client.slug}
-                </div>
-                <div>
-                    <strong>Status:</strong> <span class="badge badge-active">${client.status}</span>
-                </div>
-                <div>
-                    <strong>Host:</strong> ${client.host}
-                </div>
-                <div>
-                    <strong>Porta:</strong> ${client.port}
-                </div>
-                <div>
-                    <strong>Database:</strong> ${client.database_path}
-                </div>
-                <div>
-                    <strong>Last Test:</strong> ${client.last_tested_at ? new Date(client.last_tested_at).toLocaleString() : 'Never'}
-                </div>
-                <div>
-                    <strong>Connection OK:</strong> <span class="badge ${client.last_test_ok ? 'badge-active' : 'badge-inactive'}">${client.last_test_ok ? 'Yes' : 'No'}</span>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('clientDetailCard').style.display = 'block';
-        await loadClientKeys(clientId);
-    } catch (err) {
-        showAlert(`Error loading client: ${err.message}`, 'error');
-    }
-}
-
-function closeClientDetail() {
-    document.getElementById('clientDetailCard').style.display = 'none';
-    currentClientId = null;
-}
-
-async function loadClientKeys(clientId) {
-    document.getElementById('keysLoading').classList.add('show');
-    document.getElementById('keysTable').style.display = 'none';
-
-    try {
-        const resp = await fetch(`${API_BASE}/clients/${clientId}/keys`);
-        if (!resp.ok) throw new Error('Failed to load keys');
-
-        const keys = await resp.json();
-        const tbody = document.getElementById('keysBody');
-        tbody.innerHTML = '';
-
-        keys.forEach(key => {
-            const row = tbody.insertRow();
-            row.innerHTML = `
-                <td>${key.name}</td>
-                <td><code>${key.prefix}</code></td>
-                <td><span class="badge badge-${key.status === 'active' ? 'active' : 'revoked'}">${key.status}</span></td>
-                <td>${new Date(key.created_at).toLocaleString()}</td>
-                <td>
-                    ${key.status === 'active' ? `
-                        <button class="btn btn-secondary btn-sm" onclick="rotateKey(${key.id})">Rotacionar</button>
-                        <button class="btn btn-danger btn-sm" onclick="revokeKey(${key.id})" style="margin-left: 5px;">Revogar</button>
-                    ` : '-'}
-                </td>
-            `;
-        });
-
-        document.getElementById('keysLoading').classList.remove('show');
-        document.getElementById('keysTable').style.display = 'table';
-    } catch (err) {
-        showAlert(`Error loading keys: ${err.message}`, 'error');
-        document.getElementById('keysLoading').classList.remove('show');
-    }
-}
-
-// ============ CREATE CLIENT ============
-document.getElementById('newClientForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const name = document.getElementById('newClientName').value;
-    const slug = document.getElementById('newClientSlug').value;
-    const file = document.getElementById('newClientFile').files[0];
-
-    if (!file) {
-        showAlert('Select a confrede.ini file', 'error');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('slug', slug);
-    formData.append('confrede_file', file);
-
-    try {
-        const resp = await fetch(`${API_BASE}/clients`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!resp.ok) {
-            const err = await resp.json();
-            throw new Error(err.detail || 'Failed to create client');
-        }
-
-        showAlert(`Client "${name}" created successfully!`, 'success');
-        document.getElementById('newClientForm').reset();
-        await loadClients();
-    } catch (err) {
-        showAlert(`Error: ${err.message}`, 'error');
-    }
-});
-
-// ============ CREATE API KEY ============
-document.getElementById('newKeyForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    if (!currentClientId) {
-        showAlert('No client selected', 'error');
-        return;
-    }
-
-    const name = document.getElementById('newKeyName').value;
-    const scopeCheckboxes = document.querySelectorAll('input[name="scope"]:checked');
-
-    const scopes = {
-        'clientes': { 'read': false, 'write': false },
-        'produtos': { 'read': false, 'write': false },
-        'pedidos': { 'read': false, 'write': false },
-        'parcelas': { 'read': false, 'write': false },
-        'fornecedores': { 'read': false, 'write': false },
-    };
-
-    scopeCheckboxes.forEach(cb => {
-        const [resource, mode] = cb.value.split(':');
-        scopes[resource][mode] = true;
+  try {
+    const c = await api(`/clients/${clientId}`);
+    document.getElementById('panel-name').textContent = c.name;
+    const ig = document.getElementById('panel-info');
+    ig.innerHTML = '';
+    [
+      ['Slug', c.slug], ['Status', c.status], ['Host', c.host],
+      ['Porta', c.port], ['Database', c.database_path],
+      ['Último teste', c.last_tested_at ? fmt(c.last_tested_at) : 'Nunca'],
+      ['Conexão OK', c.last_test_ok ? 'Sim' : 'Não'],
+    ].forEach(([l, v]) => {
+      const div = document.createElement('div');
+      div.className = 'info-item';
+      div.innerHTML = `<div class="ii-lbl">${esc(l)}</div><div class="ii-val">${esc(String(v ?? '—'))}</div>`;
+      ig.appendChild(div);
     });
-
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('scopes_json', JSON.stringify(scopes));
-
-    try {
-        const resp = await fetch(`${API_BASE}/clients/${currentClientId}/keys`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!resp.ok) {
-            const err = await resp.json();
-            throw new Error(err.detail || 'Failed to create API key');
-        }
-
-        const keyInfo = await resp.json();
-        showKeyModal(keyInfo.full_key);
-        document.getElementById('newKeyForm').reset();
-        await loadClientKeys(currentClientId);
-    } catch (err) {
-        showAlert(`Error: ${err.message}`, 'error');
-    }
-});
-
-async function revokeKey(apiKeyId) {
-    if (!confirm('Revogar esta API key? Não poderá ser desfeito.')) return;
-
-    try {
-        const resp = await fetch(`${API_BASE}/keys/${apiKeyId}/revoke`, { method: 'POST' });
-        if (!resp.ok) throw new Error('Failed to revoke key');
-
-        showAlert('API key revoked', 'success');
-        await loadClientKeys(currentClientId);
-    } catch (err) {
-        showAlert(`Error: ${err.message}`, 'error');
-    }
+    buildNewKeyPerms();
+    await loadKeys(clientId);
+  } catch (e) { toast('Erro ao carregar cliente: ' + e.message, 'err'); }
 }
 
-async function rotateKey(apiKeyId) {
-    if (!confirm('Rotacionar esta key? A antiga será revogada.')) return;
-
-    try {
-        const resp = await fetch(`${API_BASE}/keys/${apiKeyId}/rotate`, { method: 'POST' });
-        if (!resp.ok) throw new Error('Failed to rotate key');
-
-        const newKey = await resp.json();
-        showKeyModal(newKey.full_key);
-        await loadClientKeys(currentClientId);
-    } catch (err) {
-        showAlert(`Error: ${err.message}`, 'error');
-    }
+function closePanel() {
+  document.getElementById('client-panel').style.display = 'none';
+  currentClientId = null;
 }
 
-function showKeyModal(fullKey) {
-    document.getElementById('keyModalContent').textContent = fullKey;
-    document.getElementById('keyModal').classList.add('show');
+// ── Keys ───────────────────────────────────────────────────────────────────
+async function loadKeys(clientId) {
+  const tbody = document.getElementById('keys-body');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px"><div class="spinner"></div></td></tr>';
+  try {
+    const keys = await api(`/clients/${clientId}/keys`);
+    tbody.innerHTML = '';
+    if (!keys.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma key — gere a primeira acima</td></tr>';
+      return;
+    }
+    keys.forEach(k => {
+      const tr = tbody.insertRow();
+      const tdN = tr.insertCell(); tdN.textContent = k.name;
+      const tdP = tr.insertCell(); tdP.innerHTML = `<code>${esc(k.prefix)}…</code>`;
+      // scopes summary
+      const scopeList = Object.entries(k.scopes || {})
+        .filter(([, p]) => p.read || p.write)
+        .map(([r, p]) => r + (p.write ? ' rw' : ' r'))
+        .join(', ');
+      const tdS = tr.insertCell(); tdS.innerHTML = `<span style="font-size:11.5px;color:var(--text-2)">${esc(scopeList || '—')}</span>`;
+      const tdSt = tr.insertCell(); tdSt.innerHTML = `<span class="badge ${k.status === 'active' ? 'b-ok' : 'b-err'}">${esc(k.status)}</span>`;
+      const tdU = tr.insertCell(); tdU.textContent = k.last_used_at ? fmt(k.last_used_at) : '—';
+      const tdA = tr.insertCell(); tdA.className = 'row-actions';
+      if (k.status === 'active') {
+        const bRot = document.createElement('button');
+        bRot.className = 'btn btn-ghost btn-sm'; bRot.textContent = 'Rotacionar';
+        bRot.onclick = () => rotateKey(k.id);
+        const bRev = document.createElement('button');
+        bRev.className = 'btn btn-danger btn-sm'; bRev.textContent = 'Revogar';
+        bRev.onclick = () => revokeKey(k.id);
+        tdA.appendChild(bRot); tdA.appendChild(bRev);
+      } else {
+        tdA.textContent = '—';
+      }
+    });
+  } catch (e) { toast('Erro ao carregar keys: ' + e.message, 'err'); }
+}
+
+function buildNewKeyPerms() {
+  const tbody = document.getElementById('new-key-perms-body');
+  tbody.innerHTML = '';
+  RESOURCES.forEach(r => {
+    const tr = tbody.insertRow();
+    const tdN = tr.insertCell(); tdN.textContent = r;
+    ['read','write'].forEach(mode => {
+      const td = tr.insertCell();
+      td.innerHTML = `<label class="toggle">
+        <input type="checkbox" id="nkp-${r}-${mode}" ${mode === 'read' ? 'checked' : ''}>
+        <span class="ttrack"></span>
+      </label>`;
+    });
+  });
+}
+
+async function createKey() {
+  if (!currentClientId) return;
+  const name = document.getElementById('key-name').value.trim();
+  if (!name) { toast('Informe um nome para a key', 'err'); return; }
+
+  const scopes = {};
+  RESOURCES.forEach(r => {
+    scopes[r] = {
+      read:  document.getElementById(`nkp-${r}-read`)?.checked  ?? false,
+      write: document.getElementById(`nkp-${r}-write`)?.checked ?? false,
+    };
+  });
+  const fd = new FormData();
+  fd.append('name', name);
+  fd.append('scopes_json', JSON.stringify(scopes));
+  try {
+    const res = await fetch(`${API}/clients/${currentClientId}/keys`, { method: 'POST', body: fd });
+    if (!res.ok) { const b = await res.json(); throw new Error(b.detail || 'Erro'); }
+    const key = await res.json();
+    document.getElementById('key-name').value = '';
+    document.getElementById('key-modal-val').textContent = key.full_key;
+    document.getElementById('key-modal').classList.add('open');
+    await loadKeys(currentClientId);
+  } catch (e) { toast('Erro ao criar key: ' + e.message, 'err'); }
+}
+
+async function revokeKey(id) {
+  if (!confirm('Revogar esta API key? Aplicações que a usam perderão acesso.')) return;
+  try {
+    await api(`/keys/${id}/revoke`, { method: 'POST' });
+    toast('Key revogada', 'ok');
+    await loadKeys(currentClientId);
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function rotateKey(id) {
+  if (!confirm('Rotacionar: a key atual será revogada e uma nova gerada.')) return;
+  try {
+    const res = await api(`/keys/${id}/rotate`, { method: 'POST' });
+    document.getElementById('key-modal-val').textContent = res.full_key;
+    document.getElementById('key-modal').classList.add('open');
+    await loadKeys(currentClientId);
+  } catch (e) { toast(e.message, 'err'); }
 }
 
 function closeKeyModal() {
-    document.getElementById('keyModal').classList.remove('show');
+  document.getElementById('key-modal').classList.remove('open');
 }
 
-function copyKeyToClipboard() {
-    const key = document.getElementById('keyModalContent').textContent;
-    navigator.clipboard.writeText(key).then(() => {
-        showAlert('Key copied to clipboard!', 'success');
+function copyKey(elId) {
+  const txt = document.getElementById(elId).textContent;
+  navigator.clipboard.writeText(txt).then(() => toast('Copiado para o clipboard', 'ok'));
+}
+
+// ── New client modal (multi-step) ──────────────────────────────────────────
+let ncCurrentStep = 1;
+let ncCreatedSlug = '';
+
+function buildNcPerms() {
+  const tbody = document.getElementById('nc-perms-body');
+  tbody.innerHTML = '';
+  RESOURCES.forEach(r => {
+    const tr = tbody.insertRow();
+    const tdN = tr.insertCell(); tdN.textContent = r;
+    ['read','write'].forEach(mode => {
+      const td = tr.insertCell();
+      td.innerHTML = `<label class="toggle">
+        <input type="checkbox" id="ncp-${r}-${mode}" ${mode === 'read' ? 'checked' : ''}>
+        <span class="ttrack"></span>
+      </label>`;
     });
+  });
 }
 
-// ============ METRICS ============
-async function loadMetrics() {
-    try {
-        const resp = await fetch(`${API_BASE}/metrics`);
-        if (!resp.ok) throw new Error('Failed to load metrics');
+function openNewClientModal() {
+  ncCurrentStep = 1;
+  ncCreatedSlug = '';
+  document.getElementById('nc-name').value = '';
+  document.getElementById('nc-slug').value = '';
+  document.getElementById('nc-file').value = '';
+  document.getElementById('nc-key-name').value = 'default';
+  document.getElementById('nc-result-key').textContent = '';
+  buildNcPerms();
+  renderStepper(1);
+  document.querySelectorAll('.step-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
+  document.getElementById('new-client-modal').classList.add('open');
+}
 
-        const metrics = await resp.json();
+function closeNewClientModal() {
+  document.getElementById('new-client-modal').classList.remove('open');
+}
 
-        document.getElementById('totalRequests').textContent = metrics.total_requests;
-        document.getElementById('errorCount').textContent = metrics.error_count;
-        document.getElementById('errorRate').textContent = `${metrics.error_rate.toFixed(1)}%`;
+// auto-slug from name
+document.getElementById('nc-name').addEventListener('input', function () {
+  const slug = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  document.getElementById('nc-slug').value = slug;
+});
 
-        const tbody = document.getElementById('topRoutesBody');
-        tbody.innerHTML = '';
-        metrics.top_routes.forEach(route => {
-            const row = tbody.insertRow();
-            row.innerHTML = `<td>${route.path}</td><td>${route.count}</td>`;
-        });
-    } catch (err) {
-        showAlert(`Error loading metrics: ${err.message}`, 'error');
+function renderStepper(active) {
+  document.querySelectorAll('.step-item').forEach(el => {
+    const n = parseInt(el.dataset.step);
+    el.classList.toggle('s-active', n === active);
+    el.classList.toggle('s-done',   n < active);
+  });
+}
+
+function ncStep(to) {
+  // Validate current before advancing
+  if (to > ncCurrentStep) {
+    if (ncCurrentStep === 1) {
+      const name = document.getElementById('nc-name').value.trim();
+      const slug = document.getElementById('nc-slug').value.trim();
+      if (!name || !slug) { toast('Preencha nome e slug', 'err'); return; }
     }
+    if (ncCurrentStep === 2) {
+      if (!document.getElementById('nc-file').files.length) { toast('Selecione o arquivo confrede.ini', 'err'); return; }
+    }
+  }
+  ncCurrentStep = to;
+  renderStepper(to);
+  document.querySelectorAll('.step-pane').forEach((p, i) => p.classList.toggle('active', i + 1 === to));
 }
 
-// ============ LOGS ============
-let logsPage = 0;
-const logsLimit = 50;
+async function submitNewClient() {
+  const name     = document.getElementById('nc-name').value.trim();
+  const slug     = document.getElementById('nc-slug').value.trim();
+  const file     = document.getElementById('nc-file').files[0];
+  const keyName  = document.getElementById('nc-key-name').value.trim() || 'default';
 
-async function loadLogs() {
-    logsPage = 0;
-    await fetchLogs();
+  if (!name || !slug || !file) { toast('Preencha todos os campos', 'err'); return; }
+
+  const scopes = {};
+  RESOURCES.forEach(r => {
+    scopes[r] = {
+      read:  document.getElementById(`ncp-${r}-read`)?.checked  ?? false,
+      write: document.getElementById(`ncp-${r}-write`)?.checked ?? false,
+    };
+  });
+
+  const fd = new FormData();
+  fd.append('name', name);
+  fd.append('slug', slug);
+  fd.append('confrede_file', file);
+
+  try {
+    // 1) create client
+    const r1 = await fetch(`${API}/clients`, { method: 'POST', body: fd });
+    if (!r1.ok) { const b = await r1.json(); throw new Error(b.detail || 'Erro ao criar cliente'); }
+    const client = await r1.json();
+
+    // 2) create initial API key
+    const fd2 = new FormData();
+    fd2.append('name', keyName);
+    fd2.append('scopes_json', JSON.stringify(scopes));
+    const r2 = await fetch(`${API}/clients/${client.id}/keys`, { method: 'POST', body: fd2 });
+    if (!r2.ok) { const b = await r2.json(); throw new Error(b.detail || 'Erro ao criar key'); }
+    const key = await r2.json();
+
+    ncCreatedSlug = slug;
+    document.getElementById('nc-result-key').textContent = key.full_key;
+    const docsLink = document.getElementById('nc-docs-link');
+    docsLink.href = `/docs/${encodeURIComponent(slug)}`;
+    ncStep(5);
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ── Metrics ────────────────────────────────────────────────────────────────
+async function loadMetrics() {
+  try {
+    const m = await api('/metrics');
+    document.getElementById('m-total').textContent = m.total_requests ?? '—';
+    document.getElementById('m-errs').textContent  = m.error_count ?? '—';
+    document.getElementById('m-rate').textContent  = m.error_rate != null ? m.error_rate.toFixed(1) + '%' : '—';
+    const tbody = document.getElementById('m-routes');
+    tbody.innerHTML = '';
+    (m.top_routes || []).forEach(r => {
+      const tr = tbody.insertRow();
+      tr.insertCell().textContent = r.path;
+      tr.insertCell().textContent = r.count;
+    });
+    if (!tbody.rows.length) tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Sem dados</td></tr>';
+  } catch (e) { toast('Erro métricas: ' + e.message, 'err'); }
+}
+
+// ── Logs ───────────────────────────────────────────────────────────────────
+let logsPage = 0;
+const LOGS_LIMIT = 50;
+
+function populateLogClientFilter() {
+  const sel = document.getElementById('log-client');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>';
+  clientsCache.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name;
+    sel.appendChild(o);
+  });
+  sel.value = cur;
+}
+
+function initLogFilters() {
+  if (!document.getElementById('log-client').options.length) populateLogClientFilter();
 }
 
 async function fetchLogs() {
-    const clientId = document.getElementById('logsClientFilter').value;
-    const method = document.getElementById('logsMethodFilter').value;
-    const statusStr = document.getElementById('logsStatusFilter').value;
+  const tbody = document.getElementById('logs-body');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px"><div class="spinner"></div></td></tr>';
+  const params = new URLSearchParams({ limit: LOGS_LIMIT, offset: logsPage * LOGS_LIMIT });
+  const cid = document.getElementById('log-client').value;
+  const method = document.getElementById('log-method').value;
+  const status = document.getElementById('log-status').value;
+  if (cid) params.set('client_id', cid);
+  if (method) params.set('method', method);
+  if (status) params.set('status_code', status);
 
-    let statusCode = null;
-    if (statusStr === '200') statusCode = 200;
-    else if (statusStr === '400') statusCode = 400;  // Will be interpreted differently in backend
-    else if (statusStr === '500') statusCode = 500;
-
-    const params = new URLSearchParams();
-    if (clientId) params.append('client_id', clientId);
-    if (method) params.append('method', method);
-    if (statusCode) params.append('status_code', statusCode);
-    params.append('limit', logsLimit);
-    params.append('offset', logsPage * logsLimit);
-
-    try {
-        const resp = await fetch(`${API_BASE}/logs?${params}`);
-        if (!resp.ok) throw new Error('Failed to load logs');
-
-        const data = await resp.json();
-
-        const tbody = document.getElementById('logsBody');
-        tbody.innerHTML = '';
-        data.logs.forEach(log => {
-            const row = tbody.insertRow();
-            const statusClass = log.status_code < 400 ? 'badge-active' : 'badge-inactive';
-            row.innerHTML = `
-                <td>${new Date(log.created_at).toLocaleString()}</td>
-                <td>${log.method}</td>
-                <td>${log.path}</td>
-                <td><span class="badge ${statusClass}">${log.status_code}</span></td>
-                <td>${log.duration_ms}ms</td>
-            `;
-        });
-
-        document.getElementById('logsPageInfo').textContent = `Página ${logsPage + 1} de ${Math.ceil(data.total / logsLimit)}`;
-        document.getElementById('logsPrevBtn').disabled = logsPage === 0;
-        document.getElementById('logsNextBtn').disabled = (logsPage + 1) * logsLimit >= data.total;
-    } catch (err) {
-        showAlert(`Error loading logs: ${err.message}`, 'error');
+  try {
+    const data = await api('/logs?' + params);
+    tbody.innerHTML = '';
+    if (!data.logs.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum log encontrado</td></tr>';
+    } else {
+      data.logs.forEach(l => {
+        const tr = tbody.insertRow();
+        tr.insertCell().textContent = fmt(l.created_at);
+        tr.insertCell().textContent = l.client_name ?? '—';
+        tr.insertCell().innerHTML = `<code>${esc(l.method)}</code>`;
+        tr.insertCell().textContent = l.path;
+        const sc = l.status_code;
+        const cls = sc < 400 ? 's-2xx' : sc < 500 ? 's-4xx' : 's-5xx';
+        tr.insertCell().innerHTML = `<span class="${cls}">${esc(String(sc))}</span>`;
+        tr.insertCell().textContent = l.duration_ms != null ? l.duration_ms + 'ms' : '—';
+      });
     }
+    const totalPages = Math.ceil(data.total / LOGS_LIMIT);
+    document.getElementById('log-info').textContent = `Página ${logsPage + 1} de ${totalPages || 1}`;
+    document.getElementById('log-prev').disabled = logsPage === 0;
+    document.getElementById('log-next').disabled = (logsPage + 1) * LOGS_LIMIT >= data.total;
+  } catch (e) { toast('Erro logs: ' + e.message, 'err'); }
 }
 
-function prevLogsPage() {
-    if (logsPage > 0) {
-        logsPage--;
-        fetchLogs();
-    }
-}
+// ── Keyboard shortcuts ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.backdrop.open').forEach(m => {
+      m.classList.remove('open');
+    });
+  }
+});
 
-function nextLogsPage() {
-    logsPage++;
-    fetchLogs();
-}
+// Close modals on backdrop click
+document.querySelectorAll('.backdrop').forEach(bd => {
+  bd.addEventListener('click', e => {
+    if (e.target === bd) bd.classList.remove('open');
+  });
+});
 
-// ============ INIT ============
-showLoginScreen(true);
+// ── Boot ───────────────────────────────────────────────────────────────────
+checkSession();
 </script>
 </body>
 </html>

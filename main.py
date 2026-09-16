@@ -1,10 +1,12 @@
 """FastAPI main application - ERP Anexar v2.0 (Multi-tenant with API Keys)"""
+import os
+from dotenv import load_dotenv
+load_dotenv('.env.local')  # must run before any local import that reads os.environ
+
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from pathlib import Path
-import os
-from dotenv import load_dotenv
 import firebirdsql
 
 from repository import (
@@ -26,8 +28,6 @@ from request_logging import RequestLoggingMiddleware
 from admin_routes import router as admin_router
 from ai_routes import router as ai_router
 from platform_db import init_platform_db
-
-load_dotenv('.env.local')
 
 # Initialize platform database on startup
 try:
