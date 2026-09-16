@@ -1,589 +1,558 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - ERP Anexar API v2.0</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anexar API</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:         #0d0d10;
+  --surface:    #111115;
+  --elevated:   #1a1a20;
+  --border:     #26262e;
+  --text:       #f0f0f4;
+  --text-2:     #9090a0;
+  --text-3:     #5a5a6a;
+  --accent:     #5e6ad2;
+  --accent-hi:  #818cf8;
+  --accent-dim: rgba(94,106,210,.14);
+  --ok:         #22c55e;
+  --ok-dim:     rgba(34,197,94,.12);
+  --err:        #ef4444;
+  --err-dim:    rgba(239,68,68,.12);
+  --warn:       #f59e0b;
+  --warn-dim:   rgba(245,158,11,.12);
+  --r:          7px;
+  --r-sm:       5px;
+  --sans:       'Inter', -apple-system, sans-serif;
+  --mono:       'SF Mono','Fira Code',monospace;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
 
-        :root {
-            --primary: #0066CC;
-            --success: #00AA66;
-            --warning: #FF9900;
-            --danger: #FF3333;
-            --dark: #1A1A2E;
-            --light: #F5F5F5;
-            --border: #CCCCCC;
-        }
+/* Header */
+.header {
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:14px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+.header-logo { display:flex; align-items:center; gap:9px; }
+.logo-mark { width:27px; height:27px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0; }
+.logo-name { font-size:14.5px; font-weight:600; }
+.header-right { display:flex; align-items:center; gap:12px; }
+.api-key-wrap { display:flex; align-items:center; gap:8px; }
+.api-key-wrap label { font-size:12px; color:var(--text-2); white-space:nowrap; }
+.api-key-wrap input {
+  background:var(--elevated);
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  color:var(--text);
+  font-size:12.5px;
+  font-family:var(--mono);
+  padding:6px 10px;
+  width:220px;
+  outline:none;
+  transition:border-color .15s;
+}
+.api-key-wrap input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:none; border-radius:var(--r-sm); font-size:12.5px; font-weight:500; font-family:var(--sans); cursor:pointer; transition:all .12s; white-space:nowrap; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent-hi); }
+.btn-ghost { background:transparent; color:var(--text-2); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--elevated); color:var(--text); }
+.status-pill { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-2); }
+.status-dot { width:7px; height:7px; border-radius:50%; background:var(--text-3); flex-shrink:0; }
+.status-dot.ok   { background:var(--ok); box-shadow:0 0 6px rgba(34,197,94,.5); }
+.status-dot.err  { background:var(--err); }
+.docs-btn { font-size:12px; color:var(--accent-hi); text-decoration:none; }
+.docs-btn:hover { text-decoration:underline; }
 
-        body {
-            font-family: "Segoe UI", Helvetica, sans-serif;
-            background: var(--light);
-            color: var(--dark);
-        }
+/* Main content */
+.container { max-width:1300px; margin:0 auto; padding:24px 24px; }
 
-        .header {
-            background: var(--dark);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
+/* Auth notice */
+#auth-notice {
+  background:var(--accent-dim);
+  border:1px solid rgba(94,106,210,.25);
+  border-radius:var(--r);
+  padding:20px 24px;
+  margin-bottom:24px;
+  display:none;
+}
+#auth-notice p { font-size:13px; color:var(--accent-hi); }
+#auth-notice .hint { font-size:12px; color:var(--text-2); margin-top:4px; }
 
-        .header h1 {
-            font-size: 24px;
-        }
+/* KPI grid */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:22px; }
+.kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; }
+.kpi-lbl { font-size:11px; color:var(--text-3); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
+.kpi-val { font-size:26px; font-weight:600; margin-top:4px; letter-spacing:-.02em; }
+.kpi-sub { font-size:11.5px; color:var(--text-3); margin-top:2px; }
 
-        .header-info {
-            display: flex;
-            gap: 20px;
-            font-size: 14px;
-            align-items: center;
-        }
+/* Tabs */
+.tabs-bar {
+  display:flex;
+  gap:2px;
+  margin-bottom:16px;
+  border-bottom:1px solid var(--border);
+  overflow-x:auto;
+}
+.tab-btn {
+  padding:9px 16px;
+  background:transparent;
+  border:none;
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+  font-size:13px;
+  font-family:var(--sans);
+  color:var(--text-2);
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all .15s;
+}
+.tab-btn:hover { color:var(--text); }
+.tab-btn.active { color:var(--accent-hi); border-bottom-color:var(--accent-hi); font-weight:500; }
 
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+/* Table panel */
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
 
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--success);
-        }
+/* Table */
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+.table-wrap table { width:100%; border-collapse:collapse; }
+.table-wrap th {
+  background:var(--elevated);
+  padding:9px 14px;
+  text-align:left;
+  font-size:10.5px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  color:var(--text-3);
+  border-bottom:1px solid var(--border);
+}
+.table-wrap td { padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; }
+.table-wrap tr:last-child td { border-bottom:none; }
+.table-wrap tr:hover td { background:rgba(255,255,255,.017); }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+/* Badges */
+.badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; }
+.badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.b-ok   { background:var(--ok-dim);  color:var(--ok); }
+.b-warn { background:var(--warn-dim);color:var(--warn); }
+.b-info { background:var(--accent-dim); color:var(--accent-hi); }
 
-        .metrics {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
+/* Masked */
+.masked { font-family:var(--mono); font-size:12px; color:var(--text-2); }
 
-        .metric-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+/* State rows */
+.row-loading { text-align:center; padding:32px; color:var(--text-3); }
+.row-err     { text-align:center; padding:24px; color:var(--err); font-size:13px; }
+.row-empty   { text-align:center; padding:36px; color:var(--text-3); font-size:13px; }
 
-        .metric-card h3 {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
+/* Footer */
+.tab-foot { padding:9px 14px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.tab-foot .upd { font-size:11.5px; color:var(--text-3); }
+.pager { display:flex; gap:6px; }
 
-        .metric-card .value {
-            font-size: 32px;
-            font-weight: bold;
-            color: var(--primary);
-            margin-bottom: 5px;
-        }
+/* Toast */
+#toast-bar { position:fixed; top:14px; right:14px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+.toast { padding:10px 14px; border-radius:var(--r-sm); font-size:13px; max-width:300px; pointer-events:auto; animation:tin .18s ease; }
+@keyframes tin { from { transform:translateX(14px); opacity:0; } }
+.t-ok  { background:var(--ok-dim);  color:var(--ok);  border:1px solid rgba(34,197,94,.2); }
+.t-err { background:var(--err-dim); color:var(--err); border:1px solid rgba(239,68,68,.2); }
 
-        .metric-card .subtext {
-            font-size: 12px;
-            color: #999;
-        }
+/* Spinner */
+.spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; display:inline-block; vertical-align:middle; }
+@keyframes spin { to { transform:rotate(360deg); } }
 
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--border);
-        }
+/* Currency */
+.currency { font-family:var(--mono); font-size:12.5px; }
 
-        .tab-button {
-            padding: 12px 20px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .tab-button.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-
-        .tab-content {
-            display: none;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        .data-table th {
-            background: var(--light);
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 12px;
-            color: #666;
-            border-bottom: 2px solid var(--border);
-        }
-
-        .data-table td {
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .data-table tr:hover {
-            background: #FAFAFA;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .badge.active {
-            background: #E8F5E9;
-            color: var(--success);
-        }
-
-        .badge.inactive {
-            background: #FFF3E0;
-            color: var(--warning);
-        }
-
-        .badge.status {
-            background: #E3F2FD;
-            color: var(--primary);
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #999;
-        }
-
-        .error {
-            background: #FFEBEE;
-            color: var(--danger);
-            padding: 15px;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-
-        .pagination {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-
-        .pagination button {
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            background: white;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        .pagination button.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .refresh-info {
-            font-size: 11px;
-            color: #999;
-            margin-top: 10px;
-        }
-
-        .masked {
-            font-family: monospace;
-            font-size: 12px;
-            color: #666;
-        }
-    </style>
+@media (max-width:600px) {
+  .api-key-wrap input { width:140px; }
+  .container { padding:16px; }
+  .header { flex-wrap:wrap; }
+}
+</style>
 </head>
 <body>
-    <div class="header">
-        <h1>ERP Anexar API v2.0</h1>
-        <div class="header-info">
-            <div class="status">
-                <div class="status-dot" id="status-indicator"></div>
-                <span id="status-text">Verificando...</span>
-            </div>
-            <div>Firebird Real-Time Data</div>
-        </div>
+
+<div id="toast-bar" aria-live="polite"></div>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-logo">
+    <div class="logo-mark">A</div>
+    <span class="logo-name">Anexar API</span>
+  </div>
+  <div class="header-right">
+    <div class="api-key-wrap">
+      <label for="api-key-input">API Key</label>
+      <input type="password" id="api-key-input" placeholder="anexar_…" autocomplete="off">
+      <button class="btn btn-primary" onclick="applyKey()">Carregar</button>
     </div>
-
-    <div class="container">
-        <!-- Métricas -->
-        <div class="metrics">
-            <div class="metric-card">
-                <h3>Clientes</h3>
-                <div class="value" id="metric-clientes">-</div>
-                <div class="subtext">Total cadastrados</div>
-            </div>
-            <div class="metric-card">
-                <h3>Produtos</h3>
-                <div class="value" id="metric-produtos">-</div>
-                <div class="subtext">Produtos ativos</div>
-            </div>
-            <div class="metric-card">
-                <h3>Pedidos</h3>
-                <div class="value" id="metric-pedidos">-</div>
-                <div class="subtext">Pedidos confirmados</div>
-            </div>
-            <div class="metric-card">
-                <h3>Fornecedores</h3>
-                <div class="value" id="metric-fornecedores">-</div>
-                <div class="subtext">Fornecedores ativos</div>
-            </div>
-        </div>
-
-        <!-- Abas de Dados -->
-        <div class="tabs">
-            <button class="tab-button active" onclick="switchTab('clientes')">Clientes</button>
-            <button class="tab-button" onclick="switchTab('produtos')">Produtos</button>
-            <button class="tab-button" onclick="switchTab('pedidos')">Pedidos</button>
-            <button class="tab-button" onclick="switchTab('parcelas')">Parcelas</button>
-            <button class="tab-button" onclick="switchTab('fornecedores')">Fornecedores</button>
-        </div>
-
-        <!-- Clientes Tab -->
-        <div class="tab-content active" id="tab-clientes">
-            <h2>Clientes</h2>
-            <div id="clientes-loading" class="loading">Carregando...</div>
-            <table class="data-table" id="clientes-table" style="display:none">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Razão Social</th>
-                        <th>CPF/CNPJ</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th>Limite Venda</th>
-                    </tr>
-                </thead>
-                <tbody id="clientes-tbody"></tbody>
-            </table>
-            <div class="refresh-info">Última atualização: <span id="clientes-time">-</span></div>
-        </div>
-
-        <!-- Produtos Tab -->
-        <div class="tab-content" id="tab-produtos">
-            <h2>Produtos</h2>
-            <div id="produtos-loading" class="loading">Carregando...</div>
-            <table class="data-table" id="produtos-table" style="display:none">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Referência</th>
-                        <th>Nome</th>
-                        <th>Valor Venda</th>
-                        <th>Custo Médio</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="produtos-tbody"></tbody>
-            </table>
-            <div class="refresh-info">Última atualização: <span id="produtos-time">-</span></div>
-        </div>
-
-        <!-- Pedidos Tab -->
-        <div class="tab-content" id="tab-pedidos">
-            <h2>Pedidos</h2>
-            <div id="pedidos-loading" class="loading">Carregando...</div>
-            <table class="data-table" id="pedidos-table" style="display:none">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Data</th>
-                        <th>Cliente</th>
-                        <th>Valor Total</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="pedidos-tbody"></tbody>
-            </table>
-            <div class="refresh-info">Última atualização: <span id="pedidos-time">-</span></div>
-        </div>
-
-        <!-- Parcelas Tab -->
-        <div class="tab-content" id="tab-parcelas">
-            <h2>Parcelas em Aberto</h2>
-            <div id="parcelas-loading" class="loading">Carregando...</div>
-            <table class="data-table" id="parcelas-table" style="display:none">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Vencimento</th>
-                        <th>Valor</th>
-                        <th>Status</th>
-                        <th>Data Recebimento</th>
-                    </tr>
-                </thead>
-                <tbody id="parcelas-tbody"></tbody>
-            </table>
-            <div class="refresh-info">Última atualização: <span id="parcelas-time">-</span></div>
-        </div>
-
-        <!-- Fornecedores Tab -->
-        <div class="tab-content" id="tab-fornecedores">
-            <h2>Fornecedores</h2>
-            <div id="fornecedores-loading" class="loading">Carregando...</div>
-            <table class="data-table" id="fornecedores-table" style="display:none">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Razão Social</th>
-                        <th>CPF/CNPJ</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="fornecedores-tbody"></tbody>
-            </table>
-            <div class="refresh-info">Última atualização: <span id="fornecedores-time">-</span></div>
-        </div>
+    <div class="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">—</span>
     </div>
+    <a id="docs-link" class="docs-btn" href="#" target="_blank" style="display:none">Documentação →</a>
+  </div>
+</header>
 
-    <script>
-        const API_BASE = '/api/v1';
-        const REFRESH_INTERVAL = 30000; // 30 segundos
+<!-- Main -->
+<div class="container">
 
-        // Tab switching
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+  <div id="auth-notice">
+    <p>Informe sua API Key no campo acima para visualizar os dados.</p>
+    <p class="hint">A key é armazenada apenas nesta sessão do navegador.</p>
+  </div>
 
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-            event.target.classList.add('active');
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-lbl">Clientes</div><div class="kpi-val" id="kpi-clientes">—</div><div class="kpi-sub">registros ativos</div></div>
+    <div class="kpi"><div class="kpi-lbl">Produtos</div><div class="kpi-val" id="kpi-produtos">—</div><div class="kpi-sub">itens ativos</div></div>
+    <div class="kpi"><div class="kpi-lbl">Pedidos</div><div class="kpi-val" id="kpi-pedidos">—</div><div class="kpi-sub">na consulta</div></div>
+    <div class="kpi"><div class="kpi-lbl">Fornecedores</div><div class="kpi-val" id="kpi-fornecedores">—</div><div class="kpi-sub">ativos</div></div>
+  </div>
 
-            loadData(tabName);
-        }
+  <!-- Tabs -->
+  <div class="tabs-bar" role="tablist">
+    <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="panel-clientes"    onclick="switchTab('clientes',this)">Clientes</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-produtos"    onclick="switchTab('produtos',this)">Produtos</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-pedidos"     onclick="switchTab('pedidos',this)">Pedidos</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-parcelas"    onclick="switchTab('parcelas',this)">Parcelas</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-fornecedores" onclick="switchTab('fornecedores',this)">Fornecedores</button>
+  </div>
 
-        // Format currency
-        function formatCurrency(value) {
-            return new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-            }).format(value);
-        }
+  <!-- Tab panels -->
+  <div id="panel-clientes" class="tab-panel active" role="tabpanel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Razão Social</th><th>CPF/CNPJ</th><th>Email</th><th>Status</th><th>Limite</th></tr></thead>
+        <tbody id="tbody-clientes"><tr><td colspan="6" class="row-loading"><div class="spinner"></div></td></tr></tbody>
+      </table>
+      <div class="tab-foot">
+        <span class="upd">Atualizado: <span id="upd-clientes">—</span></span>
+        <div class="pager">
+          <button class="btn btn-ghost" id="prev-clientes" onclick="prevPage('clientes')" disabled>←</button>
+          <button class="btn btn-ghost" id="next-clientes" onclick="nextPage('clientes')">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        // Format date
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            return new Date(dateStr).toLocaleDateString('pt-BR');
-        }
+  <div id="panel-produtos" class="tab-panel" role="tabpanel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Ref.</th><th>Nome</th><th>Venda</th><th>Custo Médio</th><th>Status</th></tr></thead>
+        <tbody id="tbody-produtos"><tr><td colspan="6" class="row-loading"><div class="spinner"></div></td></tr></tbody>
+      </table>
+      <div class="tab-foot">
+        <span class="upd">Atualizado: <span id="upd-produtos">—</span></span>
+        <div class="pager">
+          <button class="btn btn-ghost" id="prev-produtos" onclick="prevPage('produtos')" disabled>←</button>
+          <button class="btn btn-ghost" id="next-produtos" onclick="nextPage('produtos')">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        // Load Health Check
-        async function checkHealth() {
-            try {
-                const response = await fetch(`${API_BASE}/health`);
-                if (response.ok) {
-                    document.getElementById('status-indicator').style.background = 'var(--success)';
-                    document.getElementById('status-text').textContent = 'Conectado';
-                    return true;
-                }
-            } catch (e) {
-                document.getElementById('status-indicator').style.background = 'var(--danger)';
-                document.getElementById('status-text').textContent = 'Desconectado';
-            }
-            return false;
-        }
+  <div id="panel-pedidos" class="tab-panel" role="tabpanel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Data</th><th>Cliente</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody id="tbody-pedidos"><tr><td colspan="5" class="row-loading"><div class="spinner"></div></td></tr></tbody>
+      </table>
+      <div class="tab-foot">
+        <span class="upd">Atualizado: <span id="upd-pedidos">—</span></span>
+        <div class="pager">
+          <button class="btn btn-ghost" id="prev-pedidos" onclick="prevPage('pedidos')" disabled>←</button>
+          <button class="btn btn-ghost" id="next-pedidos" onclick="nextPage('pedidos')">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        // Load Clientes
-        async function loadClientes() {
-            const tbody = document.getElementById('clientes-tbody');
-            const loading = document.getElementById('clientes-loading');
-            const table = document.getElementById('clientes-table');
+  <div id="panel-parcelas" class="tab-panel" role="tabpanel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Recebimento</th></tr></thead>
+        <tbody id="tbody-parcelas"><tr><td colspan="5" class="row-loading"><div class="spinner"></div></td></tr></tbody>
+      </table>
+      <div class="tab-foot">
+        <span class="upd">Atualizado: <span id="upd-parcelas">—</span></span>
+        <div class="pager">
+          <button class="btn btn-ghost" id="prev-parcelas" onclick="prevPage('parcelas')" disabled>←</button>
+          <button class="btn btn-ghost" id="next-parcelas" onclick="nextPage('parcelas')">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-            try {
-                const response = await fetch(`${API_BASE}/clientes?limit=10&offset=0`);
-                const data = await response.json();
+  <div id="panel-fornecedores" class="tab-panel" role="tabpanel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Razão Social</th><th>CPF/CNPJ</th><th>Email</th><th>Status</th></tr></thead>
+        <tbody id="tbody-fornecedores"><tr><td colspan="5" class="row-loading"><div class="spinner"></div></td></tr></tbody>
+      </table>
+      <div class="tab-foot">
+        <span class="upd">Atualizado: <span id="upd-fornecedores">—</span></span>
+        <div class="pager">
+          <button class="btn btn-ghost" id="prev-fornecedores" onclick="prevPage('fornecedores')" disabled>←</button>
+          <button class="btn btn-ghost" id="next-fornecedores" onclick="nextPage('fornecedores')">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-                tbody.innerHTML = data.map(c => `
-                    <tr>
-                        <td>${c.id}</td>
-                        <td>${c.razao_social}</td>
-                        <td><span class="masked">${c.cpf_cnpj || '-'}</span></td>
-                        <td><span class="masked">${c.email || '-'}</span></td>
-                        <td><span class="badge ${c.ativo ? 'active' : 'inactive'}">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
-                        <td>${formatCurrency(c.limite_venda)}</td>
-                    </tr>
-                `).join('');
+</div>
 
-                document.getElementById('metric-clientes').textContent = data.length > 0 ? '3.013' : '-';
-                loading.style.display = 'none';
-                table.style.display = 'table';
-                document.getElementById('clientes-time').textContent = new Date().toLocaleTimeString('pt-BR');
-            } catch (e) {
-                loading.innerHTML = `<div class="error">Erro ao carregar: ${e.message}</div>`;
-            }
-        }
+<script>
+'use strict';
+const BASE = '/api/v1';
+const PAGE = 50;
 
-        // Load Produtos
-        async function loadProdutos() {
-            const tbody = document.getElementById('produtos-tbody');
-            const loading = document.getElementById('produtos-loading');
-            const table = document.getElementById('produtos-table');
+// ── XSS-safe escape ────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-            try {
-                const response = await fetch(`${API_BASE}/produtos?limit=10&offset=0`);
-                const data = await response.json();
+// ── Currency / date ────────────────────────────────────────────────────────
+const BRL = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+function cur(v) { return v != null ? BRL.format(v) : '—'; }
+function dt(s)  { return s ? new Date(s).toLocaleDateString('pt-BR') : '—'; }
+function now()  { return new Date().toLocaleTimeString('pt-BR'); }
 
-                tbody.innerHTML = data.map(p => `
-                    <tr>
-                        <td>${p.id}</td>
-                        <td>${p.referencia || '-'}</td>
-                        <td>${p.nome}</td>
-                        <td>${formatCurrency(p.valor_venda)}</td>
-                        <td>${formatCurrency(p.custo_medio)}</td>
-                        <td><span class="badge ${p.ativo ? 'active' : 'inactive'}">${p.ativo ? 'Ativo' : 'Inativo'}</span></td>
-                    </tr>
-                `).join('');
+// ── API key (sessionStorage — not persisted across browser sessions) ────────
+let apiKey = '';
+try { apiKey = sessionStorage.getItem('anexar_key') || ''; } catch {}
+if (apiKey) document.getElementById('api-key-input').value = apiKey;
 
-                document.getElementById('metric-produtos').textContent = data.length > 0 ? '53' : '-';
-                loading.style.display = 'none';
-                table.style.display = 'table';
-                document.getElementById('produtos-time').textContent = new Date().toLocaleTimeString('pt-BR');
-            } catch (e) {
-                loading.innerHTML = `<div class="error">Erro ao carregar: ${e.message}</div>`;
-            }
-        }
+function applyKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val) { toast('Informe a API key', 'err'); return; }
+  apiKey = val;
+  try { sessionStorage.setItem('anexar_key', val); } catch {}
+  document.getElementById('auth-notice').style.display = 'none';
+  checkHealth();
+  loadAll();
+}
 
-        // Load Pedidos
-        async function loadPedidos() {
-            const tbody = document.getElementById('pedidos-tbody');
-            const loading = document.getElementById('pedidos-loading');
-            const table = document.getElementById('pedidos-table');
+function headers() {
+  return { 'X-API-Key': apiKey };
+}
 
-            try {
-                const response = await fetch(`${API_BASE}/pedidos?limit=10&offset=0`);
-                const data = await response.json();
+// ── Toast ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const bar = document.getElementById('toast-bar');
+  const el = document.createElement('div');
+  el.className = `toast t-${type}`;
+  el.textContent = msg;
+  bar.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
 
-                tbody.innerHTML = data.map(p => `
-                    <tr>
-                        <td>${p.id}</td>
-                        <td>${formatDate(p.data_pedido)}</td>
-                        <td>${p.cliente_nome || '-'}</td>
-                        <td>${formatCurrency(p.valor_total)}</td>
-                        <td><span class="badge status">${p.status || '-'}</span></td>
-                    </tr>
-                `).join('');
+// ── Health check ───────────────────────────────────────────────────────────
+async function checkHealth() {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  try {
+    const r = await fetch(`${BASE}/health`);
+    if (r.ok) {
+      dot.className  = 'status-dot ok';
+      text.textContent = 'Conectado';
+    } else {
+      throw new Error();
+    }
+  } catch {
+    dot.className  = 'status-dot err';
+    text.textContent = 'Desconectado';
+  }
+}
 
-                document.getElementById('metric-pedidos').textContent = data.length > 0 ? '2.479' : '-';
-                loading.style.display = 'none';
-                table.style.display = 'table';
-                document.getElementById('pedidos-time').textContent = new Date().toLocaleTimeString('pt-BR');
-            } catch (e) {
-                loading.innerHTML = `<div class="error">Erro ao carregar: ${e.message}</div>`;
-            }
-        }
+// ── Pagination state ───────────────────────────────────────────────────────
+const pages = { clientes:0, produtos:0, pedidos:0, parcelas:0, fornecedores:0 };
 
-        // Load Parcelas
-        async function loadParcelas() {
-            const tbody = document.getElementById('parcelas-tbody');
-            const loading = document.getElementById('parcelas-loading');
-            const table = document.getElementById('parcelas-table');
+function prevPage(res) { if (pages[res] > 0) { pages[res]--; loadResource(res); } }
+function nextPage(res) { pages[res]++; loadResource(res); }
 
-            try {
-                const response = await fetch(`${API_BASE}/parcelas?limit=10&offset=0`);
-                const data = await response.json();
+// ── Tab switching ──────────────────────────────────────────────────────────
+let activeTab = 'clientes';
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+  activeTab = name;
+  if (apiKey) loadResource(name);
+}
 
-                tbody.innerHTML = data.map(p => `
-                    <tr>
-                        <td>${p.id}</td>
-                        <td>${formatDate(p.data_vencimento)}</td>
-                        <td>${formatCurrency(p.valor)}</td>
-                        <td><span class="badge status">Aberta</span></td>
-                        <td>${formatDate(p.data_recebimento) || 'Pendente'}</td>
-                    </tr>
-                `).join('');
+// ── Load all visible ───────────────────────────────────────────────────────
+function loadAll() {
+  ['clientes','produtos','pedidos','parcelas','fornecedores'].forEach(r => loadResource(r));
+}
 
-                loading.style.display = 'none';
-                table.style.display = 'table';
-                document.getElementById('parcelas-time').textContent = new Date().toLocaleTimeString('pt-BR');
-            } catch (e) {
-                loading.innerHTML = `<div class="error">Erro ao carregar: ${e.message}</div>`;
-            }
-        }
+// ── Generic loader ─────────────────────────────────────────────────────────
+async function loadResource(res) {
+  if (!apiKey) { showNotice(); return; }
+  const offset = pages[res] * PAGE;
+  setLoading(res);
+  try {
+    const r = await fetch(`${BASE}/${res}?limit=${PAGE}&offset=${offset}`, { headers: headers() });
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      if (r.status === 401 || r.status === 403) {
+        renderForbidden(res, r.status);
+        return;
+      }
+      throw new Error(body.detail || `HTTP ${r.status}`);
+    }
+    const data = await r.json();
+    renderData(res, data, offset);
+  } catch (e) {
+    renderError(res, e.message);
+  }
+}
 
-        // Load Fornecedores
-        async function loadFornecedores() {
-            const tbody = document.getElementById('fornecedores-tbody');
-            const loading = document.getElementById('fornecedores-loading');
-            const table = document.getElementById('fornecedores-table');
+function showNotice() {
+  document.getElementById('auth-notice').style.display = 'block';
+}
 
-            try {
-                const response = await fetch(`${API_BASE}/fornecedores?limit=10&offset=0`);
-                const data = await response.json();
+function setLoading(res) {
+  const cols = colCount(res);
+  document.getElementById('tbody-' + res).innerHTML =
+    `<tr><td colspan="${cols}" class="row-loading"><div class="spinner"></div></td></tr>`;
+}
 
-                tbody.innerHTML = data.map(f => `
-                    <tr>
-                        <td>${f.id}</td>
-                        <td>${f.razao_social}</td>
-                        <td><span class="masked">${f.cpf_cnpj || '-'}</span></td>
-                        <td><span class="masked">${f.email || '-'}</span></td>
-                        <td><span class="badge ${f.ativo ? 'active' : 'inactive'}">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
-                    </tr>
-                `).join('');
+function renderForbidden(res, status) {
+  const cols = colCount(res);
+  const msg = status === 401 ? 'API Key inválida ou expirada' : 'Sem permissão para este recurso';
+  document.getElementById('tbody-' + res).innerHTML =
+    `<tr><td colspan="${cols}" class="row-err">${esc(msg)}</td></tr>`;
+  document.getElementById('prev-' + res).disabled = true;
+  document.getElementById('next-' + res).disabled = true;
+}
 
-                document.getElementById('metric-fornecedores').textContent = data.length > 0 ? '12' : '-';
-                loading.style.display = 'none';
-                table.style.display = 'table';
-                document.getElementById('fornecedores-time').textContent = new Date().toLocaleTimeString('pt-BR');
-            } catch (e) {
-                loading.innerHTML = `<div class="error">Erro ao carregar: ${e.message}</div>`;
-            }
-        }
+function renderError(res, msg) {
+  const cols = colCount(res);
+  document.getElementById('tbody-' + res).innerHTML =
+    `<tr><td colspan="${cols}" class="row-err">Erro: ${esc(msg)}</td></tr>`;
+}
 
-        // Load data by tab
-        async function loadData(tabName) {
-            switch(tabName) {
-                case 'clientes': await loadClientes(); break;
-                case 'produtos': await loadProdutos(); break;
-                case 'pedidos': await loadPedidos(); break;
-                case 'parcelas': await loadParcelas(); break;
-                case 'fornecedores': await loadFornecedores(); break;
-            }
-        }
+function colCount(res) {
+  return { clientes:6, produtos:6, pedidos:5, parcelas:5, fornecedores:5 }[res] || 5;
+}
 
-        // Initialize on load
-        window.addEventListener('DOMContentLoaded', async () => {
-            await checkHealth();
-            await loadClientes();
-            setInterval(checkHealth, REFRESH_INTERVAL);
-        });
-    </script>
+// ── Render each resource ───────────────────────────────────────────────────
+function renderData(res, data, offset) {
+  document.getElementById('upd-' + res).textContent = now();
+  document.getElementById('prev-' + res).disabled = pages[res] === 0;
+  document.getElementById('next-' + res).disabled = data.length < PAGE;
+
+  const tbody = document.getElementById('tbody-' + res);
+
+  if (!data.length) {
+    const cols = colCount(res);
+    tbody.innerHTML = `<tr><td colspan="${cols}" class="row-empty">Nenhum registro encontrado</td></tr>`;
+    return;
+  }
+
+  // Update KPI with count from this page
+  const kpiEl = document.getElementById('kpi-' + res);
+  if (kpiEl) {
+    const total = data.length + offset;
+    kpiEl.textContent = total + (data.length === PAGE ? '+' : '');
+  }
+
+  const rows = document.createDocumentFragment();
+
+  if (res === 'clientes') {
+    data.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${esc(c.id)}</td>
+        <td>${esc(c.razao_social)}</td>
+        <td><span class="masked">${esc(c.cpf_cnpj || '—')}</span></td>
+        <td><span class="masked">${esc(c.email || '—')}</span></td>
+        <td><span class="badge ${c.ativo ? 'b-ok' : 'b-warn'}">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td class="currency">${esc(cur(c.limite_venda))}</td>`;
+      rows.appendChild(tr);
+    });
+  } else if (res === 'produtos') {
+    data.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${esc(p.id)}</td>
+        <td><span class="masked">${esc(p.referencia || '—')}</span></td>
+        <td>${esc(p.nome)}</td>
+        <td class="currency">${esc(cur(p.valor_venda))}</td>
+        <td class="currency">${esc(cur(p.custo_medio))}</td>
+        <td><span class="badge ${p.ativo ? 'b-ok' : 'b-warn'}">${p.ativo ? 'Ativo' : 'Inativo'}</span></td>`;
+      rows.appendChild(tr);
+    });
+  } else if (res === 'pedidos') {
+    data.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${esc(p.id)}</td>
+        <td>${esc(dt(p.data_pedido))}</td>
+        <td>${esc(p.cliente_nome || '—')}</td>
+        <td class="currency">${esc(cur(p.valor_total))}</td>
+        <td><span class="badge b-info">${esc(p.status || '—')}</span></td>`;
+      rows.appendChild(tr);
+    });
+  } else if (res === 'parcelas') {
+    data.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${esc(p.id)}</td>
+        <td>${esc(dt(p.data_vencimento))}</td>
+        <td class="currency">${esc(cur(p.valor))}</td>
+        <td><span class="badge b-warn">Aberta</span></td>
+        <td>${esc(dt(p.data_recebimento) || 'Pendente')}</td>`;
+      rows.appendChild(tr);
+    });
+  } else if (res === 'fornecedores') {
+    data.forEach(f => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${esc(f.id)}</td>
+        <td>${esc(f.razao_social)}</td>
+        <td><span class="masked">${esc(f.cpf_cnpj || '—')}</span></td>
+        <td><span class="masked">${esc(f.email || '—')}</span></td>
+        <td><span class="badge ${f.ativo ? 'b-ok' : 'b-warn'}">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>`;
+      rows.appendChild(tr);
+    });
+  }
+
+  tbody.innerHTML = '';
+  tbody.appendChild(rows);
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+checkHealth();
+setInterval(checkHealth, 30000);
+
+if (apiKey) {
+  loadAll();
+} else {
+  showNotice();
+  // Show empty state placeholders
+  ['clientes','produtos','pedidos','parcelas','fornecedores'].forEach(res => {
+    const cols = colCount(res);
+    document.getElementById('tbody-' + res).innerHTML =
+      `<tr><td colspan="${cols}" class="row-empty">Informe a API Key para carregar dados</td></tr>`;
+  });
+}
+</script>
 </body>
 </html>
