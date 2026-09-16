@@ -86,3 +86,6 @@ yarn.lock
 # Scratchpad files
 discovery_output.json
 *.jsonl
+
+# Generated / tooling
+graphify-out/
