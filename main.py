@@ -1,7 +1,26 @@
 """FastAPI main application - ERP Anexar v2.0 (Multi-tenant with API Keys)"""
 import os
+import asyncio
+import logging
+import logging.config
 from dotenv import load_dotenv
 load_dotenv('.env.local')  # must run before any local import that reads os.environ
+
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
+            'datefmt': '%Y-%m-%dT%H:%M:%S',
+        },
+    },
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'json'},
+    },
+    'root': {'level': os.getenv('LOG_LEVEL', 'INFO'), 'handlers': ['console']},
+})
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,7 +42,7 @@ from schemas import (
     HealthDTO
 )
 from tenant_auth import get_tenant_context, require_scope, TenantContext
-from platform_repository import get_client_by_slug, get_client_all_scopes
+from platform_repository import get_client_by_slug, get_client_all_scopes, get_request_metrics
 from request_logging import RequestLoggingMiddleware
 from admin_routes import router as admin_router
 from ai_routes import router as ai_router
@@ -33,7 +52,7 @@ from platform_db import init_platform_db
 try:
     init_platform_db()
 except Exception as e:
-    print(f"[WARN] Platform DB init: {e}")
+    logger.warning("Platform DB init: %s", e)
 
 app = FastAPI(
     title=os.getenv('API_TITLE', 'Anexar ERP API'),
@@ -157,6 +176,16 @@ async def health_check():
         version="2.0.0",
         database="firebird"
     )
+
+# ============ METRICS ============
+
+@app.get("/api/v1/metrics", include_in_schema=True)
+async def request_metrics(hours: int = Query(24, ge=1, le=168)):
+    """Aggregated request metrics for the last N hours (admin use — no tenant auth)"""
+    try:
+        return await asyncio.to_thread(get_request_metrics, hours=hours)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============ CLIENTES ============
 

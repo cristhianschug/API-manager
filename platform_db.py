@@ -1,8 +1,11 @@
 """Platform database (SQLite) for multi-tenant state: clients, API keys, admins, request logs"""
 import sqlite3
 import os
+import logging
 from datetime import datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 PLATFORM_DB_PATH = Path(__file__).parent / "platform.db"
 
@@ -136,7 +139,7 @@ def _seed_admin_user(conn: sqlite3.Connection):
             (username, password_hash)
         )
         conn.commit()
-        print(f"[OK] Admin user '{username}' seeded in platform.db")
+        logger.info("Admin user '%s' seeded in platform.db", username)
     except sqlite3.IntegrityError:
         pass
     finally:
@@ -144,4 +147,4 @@ def _seed_admin_user(conn: sqlite3.Connection):
 
 if __name__ == "__main__":
     init_platform_db()
-    print(f"[OK] Platform database initialized at {PLATFORM_DB_PATH}")
+    logger.info("Platform database initialized at %s", PLATFORM_DB_PATH)
