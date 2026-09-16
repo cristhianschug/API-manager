@@ -171,10 +171,19 @@ async def client_docs(client_slug: str):
 @app.get("/api/v1/health", response_model=HealthDTO)
 async def health_check():
     """Health check endpoint (no auth required)"""
+    try:
+        from platform_db import get_db_connection
+        conn = await asyncio.to_thread(get_db_connection)
+        await asyncio.to_thread(conn.execute, "SELECT 1 FROM admin_users LIMIT 1")
+        conn.close()
+        platform_db = "ok"
+    except Exception as e:
+        platform_db = f"error: {e}"
     return HealthDTO(
-        status="ok",
+        status="ok" if platform_db == "ok" else "degraded",
         version="2.0.0",
-        database="firebird"
+        database="firebird",
+        platform_db=platform_db,
     )
 
 # ============ METRICS ============

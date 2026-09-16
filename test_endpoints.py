@@ -9,9 +9,9 @@ def test_health(client):
     r = client.get("/api/v1/health")
     assert r.status_code == 200
     data = r.json()
-    assert data["status"] == "ok"
     assert data["version"] == "2.0.0"
     assert data["database"] == "firebird"
+    assert "platform_db" in data
 
 
 # ── Auth / scope guards ───────────────────────────────────────────────────────

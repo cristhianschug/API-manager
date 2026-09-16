@@ -1,6 +1,6 @@
 """Admin panel API routes: clients, API keys, metrics, logs"""
 import firebirdsql
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Cookie
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Cookie, Request
 from fastapi.responses import FileResponse, JSONResponse
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
@@ -59,11 +59,21 @@ def require_admin_session(admin_token: Optional[str] = Cookie(None)) -> str:
 
 # ============ LOGIN ============
 
+_login_failures: dict = {}  # ip -> (count, last_fail_ts)
+_LOGIN_LOCKOUT_SECS = 30
+_LOGIN_MAX_ATTEMPTS = 5
+
 @router.post("/login")
-async def login(username: str = Form(...), password: str = Form(...)):
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     """Admin login endpoint"""
-    import sqlite3
+    import time
     from platform_db import get_db_connection
+
+    ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    count, last_fail = _login_failures.get(ip, (0, 0))
+    if count >= _LOGIN_MAX_ATTEMPTS and now - last_fail < _LOGIN_LOCKOUT_SECS:
+        raise HTTPException(status_code=429, detail="Muitas tentativas. Aguarde 30 segundos.")
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -71,8 +81,11 @@ async def login(username: str = Form(...), password: str = Form(...)):
         cur.execute("SELECT password_hash FROM admin_users WHERE username = ?", (username,))
         row = cur.fetchone()
         if not row or not verify_admin_password(password, row['password_hash']):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            _login_failures[ip] = (count + 1, now)
+            await __import__('asyncio').sleep(1)  # slow down brute-force
+            raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
+        _login_failures.pop(ip, None)
         token = create_admin_token(username)
         return JSONResponse(
             {"message": "Logged in successfully"},

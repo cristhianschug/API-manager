@@ -9,6 +9,7 @@ class HealthDTO(BaseModel):
     status: str
     version: str
     database: str
+    platform_db: str
 
 # ============ CLIENTE DTOs (TBCLIENTE) ============
 
