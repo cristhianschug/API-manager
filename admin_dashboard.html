@@ -411,6 +411,11 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
               <tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
+          <div class="pager">
+            <button class="btn btn-ghost btn-sm" id="cl-prev" onclick="clientsPage--;loadClients()" disabled>← Anterior</button>
+            <span id="cl-info" style="font-size:12px;color:var(--text-3)"></span>
+            <button class="btn btn-ghost btn-sm" id="cl-next" onclick="clientsPage++;loadClients()" disabled>Próximo →</button>
+          </div>
         </div>
 
         <!-- Client detail panel (inline, not a modal) -->
@@ -488,6 +493,23 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
           <div class="field"><label>Nova senha</label><input type="password" id="cp-new" autocomplete="new-password"></div>
           <div class="field"><label>Confirmar nova senha</label><input type="password" id="cp-confirm" autocomplete="new-password"></div>
           <button class="btn btn-primary" onclick="changePassword()">Salvar senha</button>
+        </div>
+
+        <hr style="margin:28px 0">
+
+        <div style="font-size:13px;font-weight:600;margin-bottom:16px">Administradores</div>
+        <div class="table-wrap" style="max-width:520px;margin-bottom:16px">
+          <table><thead><tr><th>Usuário</th><th>Criado em</th><th></th></tr></thead>
+            <tbody id="admins-body"><tr><td colspan="3" class="empty-state"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+        <div style="max-width:420px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">Novo administrador</div>
+          <div class="form-row" style="align-items:flex-end">
+            <div class="field"><label>Usuário</label><input type="text" id="na-user" autocomplete="off"></div>
+            <div class="field"><label>Senha</label><input type="password" id="na-pass" autocomplete="new-password"></div>
+            <div style="padding-top:4px"><button class="btn btn-primary" onclick="createAdmin()">Adicionar</button></div>
+          </div>
         </div>
       </section>
 
@@ -746,13 +768,14 @@ function nav(view) {
   document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
   if (view === 'metricas') loadMetrics();
   if (view === 'logs') { initLogFilters(); fetchLogs(); }
+  if (view === 'config') loadAdmins();
 }
 
 // ── Overview ───────────────────────────────────────────────────────────────
 async function loadOverview() {
   try {
-    const [clients, metrics] = await Promise.all([api('/clients'), api('/metrics')]);
-    document.getElementById('kpi-clients').textContent = clients.length;
+    const [clientsData, metrics] = await Promise.all([api('/clients?limit=1'), api('/metrics')]);
+    document.getElementById('kpi-clients').textContent = clientsData.total;
     document.getElementById('kpi-reqs').textContent = metrics.total_requests ?? '—';
     document.getElementById('kpi-errs').textContent = metrics.error_count ?? '—';
     document.getElementById('kpi-rate').textContent =
@@ -770,12 +793,21 @@ async function loadOverview() {
 
 // ── Clients list ───────────────────────────────────────────────────────────
 let clientsCache = [];
+let clientsPage = 0;
+const CLIENTS_LIMIT = 20;
 
 async function loadClients() {
   try {
-    clientsCache = await api('/clients');
-    renderClients(clientsCache);
+    const data = await api(`/clients?limit=${CLIENTS_LIMIT}&offset=${clientsPage * CLIENTS_LIMIT}`);
+    clientsCache = data.clients;
+    renderClients(data.clients);
     populateLogClientFilter();
+    const totalPages = Math.ceil(data.total / CLIENTS_LIMIT);
+    document.getElementById('cl-info').textContent = totalPages > 1
+      ? `Página ${clientsPage + 1} de ${totalPages} (${data.total} clientes)`
+      : `${data.total} cliente${data.total !== 1 ? 's' : ''}`;
+    document.getElementById('cl-prev').disabled = clientsPage === 0;
+    document.getElementById('cl-next').disabled = (clientsPage + 1) * CLIENTS_LIMIT >= data.total;
   } catch (e) { toast('Erro ao carregar clientes: ' + e.message, 'err'); }
 }
 
@@ -1098,6 +1130,49 @@ async function fetchLogs() {
     document.getElementById('log-prev').disabled = logsPage === 0;
     document.getElementById('log-next').disabled = (logsPage + 1) * LOGS_LIMIT >= data.total;
   } catch (e) { toast('Erro logs: ' + e.message, 'err'); }
+}
+
+// ── Admin management ───────────────────────────────────────────────────────
+async function loadAdmins() {
+  try {
+    const admins = await api('/admins');
+    const tbody = document.getElementById('admins-body');
+    tbody.innerHTML = '';
+    admins.forEach(a => {
+      const tr = tbody.insertRow();
+      tr.insertCell().textContent = a.username;
+      tr.insertCell().textContent = fmtDate(a.created_at);
+      const td = tr.insertCell();
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-danger btn-sm'; btn.textContent = 'Remover';
+      btn.onclick = () => removeAdmin(a.id, a.username);
+      td.appendChild(btn);
+    });
+  } catch (e) { toast('Erro ao carregar admins: ' + e.message, 'err'); }
+}
+
+async function createAdmin() {
+  const username = document.getElementById('na-user').value.trim();
+  const password = document.getElementById('na-pass').value;
+  if (!username || !password) { toast('Preencha usuário e senha', 'err'); return; }
+  const fd = new FormData();
+  fd.append('username', username); fd.append('password', password);
+  try {
+    await api('/admins', { method: 'POST', body: fd });
+    toast('Admin criado', 'ok');
+    document.getElementById('na-user').value = '';
+    document.getElementById('na-pass').value = '';
+    loadAdmins();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function removeAdmin(id, username) {
+  if (!confirm(`Remover admin "${username}"?`)) return;
+  try {
+    await api(`/admins/${id}`, { method: 'DELETE' });
+    toast('Admin removido', 'ok');
+    loadAdmins();
+  } catch (e) { toast(e.message, 'err'); }
 }
 
 // ── Change password ────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ from platform_repository import (
     create_client, get_client, list_clients, update_client_credentials_test_status,
     create_api_key, list_api_keys, revoke_api_key, rotate_api_key,
     get_request_logs, get_request_logs_total_count, get_request_metrics,
+    list_admin_users, create_admin_user, delete_admin_user,
 )
 from ini_parser import parse_confrede_ini
 
@@ -87,19 +88,21 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
         _login_failures.pop(ip, None)
         token = create_admin_token(username)
+        secure = "Secure; " if request.url.scheme == "https" else ""
         return JSONResponse(
             {"message": "Logged in successfully"},
-            headers={"Set-Cookie": f"admin_token={token}; HttpOnly; Secure; SameSite=Strict; Max-Age={JWT_EXPIRATION_HOURS*3600}"}
+            headers={"Set-Cookie": f"admin_token={token}; HttpOnly; {secure}SameSite=Lax; Max-Age={JWT_EXPIRATION_HOURS*3600}"}
         )
     finally:
         conn.close()
 
 @router.post("/logout")
-async def logout():
+async def logout(request: Request):
     """Admin logout endpoint"""
+    secure = "Secure; " if request.url.scheme == "https" else ""
     return JSONResponse(
         {"message": "Logged out"},
-        headers={"Set-Cookie": "admin_token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}
+        headers={"Set-Cookie": f"admin_token=; HttpOnly; {secure}SameSite=Lax; Max-Age=0"}
     )
 
 @router.post("/change-password")
@@ -129,9 +132,46 @@ async def change_password(
 # ============ CLIENTS ============
 
 @router.get("/clients")
-async def list_clients_route(status: str = "active", _: str = Depends(require_admin_session)):
-    """List all clients"""
-    return list_clients(status)
+async def list_clients_route(
+    status: str = "active",
+    limit: int = 20,
+    offset: int = 0,
+    _: str = Depends(require_admin_session)
+):
+    """List clients with pagination"""
+    return list_clients(status, limit=limit, offset=offset)
+
+# ── Admin users ──────────────────────────────────────────────────────────────
+
+@router.get("/admins")
+async def list_admins_route(_: str = Depends(require_admin_session)):
+    return list_admin_users()
+
+@router.post("/admins")
+async def create_admin_route(
+    username: str = Form(...),
+    password: str = Form(...),
+    _: str = Depends(require_admin_session)
+):
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Senha deve ter pelo menos 8 caracteres")
+    try:
+        result = create_admin_user(username, pwd_context.hash(password))
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+@router.delete("/admins/{admin_id}")
+async def delete_admin_route(admin_id: int, username: str = Depends(require_admin_session)):
+    admins = list_admin_users()
+    if len(admins) <= 1:
+        raise HTTPException(status_code=400, detail="Não é possível remover o último admin")
+    me = next((a for a in admins if a['username'] == username), None)
+    if me and me['id'] == admin_id:
+        raise HTTPException(status_code=400, detail="Não é possível remover sua própria conta")
+    if not delete_admin_user(admin_id):
+        raise HTTPException(status_code=404, detail="Admin não encontrado")
+    return {"message": "Admin removido"}
 
 @router.post("/clients")
 async def create_client_route(

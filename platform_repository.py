@@ -122,16 +122,52 @@ def get_client_all_scopes(client_id: int) -> Dict[str, Dict[str, bool]]:
     finally:
         conn.close()
 
-def list_clients(status: str = 'active') -> List[Dict[str, Any]]:
-    """List all clients, optionally filtered by status"""
+def list_clients(status: str = 'active', limit: int = 20, offset: int = 0) -> Dict[str, Any]:
+    """List clients with pagination"""
     conn = get_db_connection()
     cur = conn.cursor()
     try:
+        cur.execute("SELECT COUNT(*) as cnt FROM clients WHERE status = ?", (status,))
+        total = cur.fetchone()['cnt']
         cur.execute(
-            """SELECT id, name, slug, status, created_at FROM clients WHERE status = ? ORDER BY created_at DESC""",
-            (status,)
+            """SELECT id, name, slug, status, created_at FROM clients
+               WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+            (status, limit, offset)
         )
+        return {"clients": [dict(row) for row in cur.fetchall()], "total": total}
+    finally:
+        conn.close()
+
+# ── Admin users ──────────────────────────────────────────────────────────────
+
+def list_admin_users() -> List[Dict[str, Any]]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT id, username, created_at FROM admin_users ORDER BY created_at")
         return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+def create_admin_user(username: str, password_hash: str) -> Dict[str, Any]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)", (username, password_hash))
+        conn.commit()
+        return {"id": cur.lastrowid, "username": username}
+    except sqlite3.IntegrityError:
+        raise ValueError(f"Usuário '{username}' já existe")
+    finally:
+        conn.close()
+
+def delete_admin_user(admin_id: int) -> bool:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM admin_users WHERE id = ?", (admin_id,))
+        conn.commit()
+        return cur.rowcount > 0
     finally:
         conn.close()
 
