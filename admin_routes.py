@@ -18,7 +18,7 @@ from ini_parser import parse_confrede_ini
 
 router = APIRouter(prefix="/admin/api", tags=["admin"])
 
-JWT_SECRET = __import__('os').getenv('JWT_SECRET_KEY', 'dev-secret-change-in-prod')
+JWT_SECRET = __import__('os').environ["JWT_SECRET_KEY"]
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
@@ -349,9 +349,9 @@ async def generate_postman_collection(client_id: int, _: str = Depends(require_a
         ]
     }
 
-    # Return as downloadable JSON
-    return FileResponse(
-        content=json.dumps(collection, indent=2).encode(),
+    from fastapi.responses import Response
+    return Response(
+        content=json.dumps(collection, indent=2),
         media_type="application/json",
-        filename=f"postman_collection_{client['slug']}.json"
+        headers={"Content-Disposition": f"attachment; filename=postman_collection_{client['slug']}.json"}
     )

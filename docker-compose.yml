@@ -6,12 +6,9 @@ services:
     container_name: anexar-api-dev
     ports:
       - "8000:8000"
+    env_file:
+      - .env.local
     environment:
-      - DB_HOST=45.177.152.52
-      - DB_PORT=40051
-      - DB_NAME=/firebird/data/clientes/8060-TESTE-MCP-FIREBIRD/b43dbc709d1d226dcef550439169f5bb/DBANEXAR_ANEXO.FDB
-      - DB_USER=CLI_8060_B43DBC
-      - DB_PASSWORD=06224baf3b147d04
       - ENVIRONMENT=development
     volumes:
       - .:/app

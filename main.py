@@ -2,13 +2,11 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
-from fastapi.security import APIKeyHeader
 from pathlib import Path
 import os
 from dotenv import load_dotenv
 import firebirdsql
 
-from database import get_db
 from repository import (
     list_clientes, get_cliente, list_produtos, get_produto,
     list_pedidos, get_pedido, list_fornecedores, get_fornecedor,

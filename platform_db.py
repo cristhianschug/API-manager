@@ -124,7 +124,7 @@ def _seed_admin_user(conn: sqlite3.Connection):
     from passlib.context import CryptContext
 
     username = os.getenv('ADMIN_BOOTSTRAP_USER', 'admin')
-    password = os.getenv('ADMIN_BOOTSTRAP_PASSWORD', 'changeme123')
+    password = os.environ["ADMIN_BOOTSTRAP_PASSWORD"]
 
     pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
     password_hash = pwd_context.hash(password)

@@ -1,6 +1,6 @@
 """Tenant resolution and authorization via API key"""
 import firebirdsql
-from fastapi import Depends, HTTPException, Header
+from fastapi import Depends, HTTPException, Header, Request
 from typing import Optional, Dict, Any
 import asyncio
 
@@ -17,7 +17,7 @@ class TenantContext:
         self.api_key_id = api_key_id
         self.scopes = scopes
 
-async def get_tenant_context(x_api_key: str = Header(...)) -> TenantContext:
+async def get_tenant_context(request: Request, x_api_key: str = Header(...)) -> TenantContext:
     """
     Dependency: resolve X-API-Key header to tenant context.
 
@@ -49,9 +49,10 @@ async def get_tenant_context(x_api_key: str = Header(...)) -> TenantContext:
     if not creds:
         raise HTTPException(status_code=500, detail="Client credentials not found")
 
-    # Open Firebird connection
+    # Open Firebird connection (off event loop — firebirdsql is synchronous)
     try:
-        conn = firebirdsql.connect(
+        conn = await asyncio.to_thread(
+            firebirdsql.connect,
             host=creds['host'],
             port=creds['port'],
             database=creds['database'],
@@ -59,19 +60,17 @@ async def get_tenant_context(x_api_key: str = Header(...)) -> TenantContext:
             password=creds['password'],
             charset=creds['charset'],
         )
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Failed to connect to client database: {e}")
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
 
-    # Update last_used_at asynchronously (best-effort)
+    context = TenantContext(conn, client_id, api_key_id, scopes)
+    request.state.tenant_context = context
     asyncio.create_task(_update_key_usage(api_key_id))
-
-    return TenantContext(conn, client_id, api_key_id, scopes)
+    return context
 
 async def _update_key_usage(api_key_id: int):
-    """Update last_used_at in background (doesn't block request)"""
     try:
-        loop = asyncio.get_event_loop()
-        loop.run_in_executor(None, update_api_key_last_used, api_key_id)
+        await asyncio.to_thread(update_api_key_last_used, api_key_id)
     except Exception:
         pass
 
