@@ -1,14 +1,13 @@
-"""Token status reporter: Anthropic session + OmniRoute free tiers"""
+"""Token status reporter: OmniRoute free tiers only (real data)"""
 import sys
 import json
 import urllib.request
 from datetime import datetime, timedelta
 
 OMNIROUTE_URL = "http://localhost:20128"
-SESSION_TOTAL = 15_000_000
 
 
-def fetch_omniroute(path: str):
+def fetch(path: str):
     try:
         req = urllib.request.Request(f"{OMNIROUTE_URL}{path}", headers={"Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=3) as r:
@@ -22,7 +21,9 @@ def bar(pct: float, width: int = 20) -> str:
     return "#" * filled + "-" * (width - filled)
 
 
-def fmt_tokens(n: int) -> str:
+def fmt(n: int) -> str:
+    if n >= 1_000_000_000:
+        return f"{n/1_000_000_000:.2f}B"
     if n >= 1_000_000:
         return f"{n/1_000_000:.1f}M"
     if n >= 1_000:
@@ -36,49 +37,50 @@ def next_renewal(period: str) -> str:
         next_r = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         delta = next_r - now
         h, m = divmod(int(delta.total_seconds() // 60), 60)
-        return f"{next_r.strftime('%d/%m %H:%M')} (em {h}h{m:02d}m)"
+        return f"{next_r.strftime('%d/%m')} 00:00 (em {h}h{m:02d}m)"
     if period == "weekly":
         days_until_monday = (7 - now.weekday()) % 7 or 7
         next_r = (now + timedelta(days=days_until_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
         delta = next_r - now
-        days_left = delta.days
+        d = delta.days
         h, m = divmod(int((delta.total_seconds() % 86400) // 60), 60)
-        return f"{next_r.strftime('%d/%m')} (em {days_left}d {h}h{m:02d}m)"
+        return f"{next_r.strftime('%d/%m')} 00:00 (em {d}d {h}h{m:02d}m)"
     return "N/A"
 
 
-def report_short(session_remaining: int):
-    pct = session_remaining / SESSION_TOTAL * 100
-    omni_ok = fetch_omniroute("/dashboard") is not None
-    omni_status = "online" if omni_ok else "offline"
-    print(
-        f"\n{'='*53}\n"
-        f"[PAGO]   Anthropic  [{bar(pct, 16)}] {pct:.1f}%  {fmt_tokens(session_remaining)} restantes\n"
-        f"[GRATIS] OmniRoute  gateway {omni_status} | use /token-status para detalhes\n"
-        f"{'='*53}"
-    )
+def report_short():
+    online = fetch("/dashboard") is not None
+    if not online:
+        print("\n[GRATIS] OmniRoute OFFLINE - inicie com: npx omniroute\n")
+        return
+
+    data = fetch("/api/free-tiers/summary")
+    if data:
+        daily_rem   = data.get("daily_remaining", 0)
+        daily_total = data.get("daily_total", 1)
+        pct = daily_rem / daily_total * 100
+        print(f"\n[GRATIS] OmniRoute online | Diario: [{bar(pct,14)}] {pct:.0f}% ({fmt(daily_rem)} restantes)\n")
+    else:
+        print("\n[GRATIS] OmniRoute online | dados detalhados indisponiveis\n")
 
 
-def report_full(session_remaining: int):
-    pct = session_remaining / SESSION_TOTAL * 100
-    used = SESSION_TOTAL - session_remaining
-
+def report_full():
     sep = "=" * 55
     thin = "-" * 55
     print(f"\n{sep}")
-    print(f"  TOKEN STATUS REPORT  |  {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print(f"  OMNIROUTE - TOKEN STATUS  |  {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print(f"  Tokens gratuitos - sua API Anexar")
     print(sep)
 
-    print("\n  [PAGO] ANTHROPIC  (cobrado na sua conta Anthropic)")
-    print(f"  {thin}")
-    print(f"  Restantes : {fmt_tokens(session_remaining):>8}  [{bar(pct, 22)}] {pct:5.1f}%")
-    print(f"  Usados    : {fmt_tokens(used):>8}  de {fmt_tokens(SESSION_TOTAL)} (sessao atual)")
-    print(f"  Renovacao : automatica ao iniciar nova sessao")
+    online = fetch("/dashboard") is not None
+    if not online:
+        print("\n  STATUS: OFFLINE")
+        print(f"  Inicie com: npx omniroute")
+        print(f"  Dashboard : {OMNIROUTE_URL}")
+        print(f"\n{sep}\n")
+        return
 
-    print(f"\n  [GRATIS] OMNIROUTE  (tokens gratuitos - sua API)")
-    print(f"  {thin}")
-
-    data = fetch_omniroute("/api/free-tiers/summary")
+    data = fetch("/api/free-tiers/summary")
     if data:
         daily_rem    = data.get("daily_remaining", 0)
         daily_total  = data.get("daily_total", 1)
@@ -91,29 +93,24 @@ def report_full(session_remaining: int):
         wp = weekly_rem / weekly_total * 100
         mp = monthly_rem / monthly_total * 100
 
-        print(f"  Diario    : {fmt_tokens(daily_rem):>8} / {fmt_tokens(daily_total):<9} [{bar(dp, 14)}] {dp:5.1f}%")
-        print(f"  Semanal   : {fmt_tokens(weekly_rem):>8} / {fmt_tokens(weekly_total):<9} [{bar(wp, 14)}] {wp:5.1f}%")
-        print(f"  Mensal    : {fmt_tokens(monthly_rem):>8} / {fmt_tokens(monthly_total):<9} [{bar(mp, 14)}] {mp:5.1f}%")
-        print(f"\n  Renovacao diaria  : {next_renewal('daily')}")
-        print(f"  Renovacao semanal : {next_renewal('weekly')}")
-    else:
-        print("  Gateway   : OFFLINE ou sem dados da API")
-        print("  Estimativa: ~1.47B tokens/mes disponiveis")
-        print(f"  Diario (est.)  : ~49M tokens")
-        print(f"  Semanal (est.) : ~343M tokens")
-        print(f"\n  Prox. renovacao diaria  : {next_renewal('daily')}")
+        print(f"\n  STATUS: ONLINE\n  {thin}")
+        print(f"  Diario    : {fmt(daily_rem):>8} / {fmt(daily_total):<9} [{bar(dp,16)}] {dp:5.1f}%")
+        print(f"  Semanal   : {fmt(weekly_rem):>8} / {fmt(weekly_total):<9} [{bar(wp,16)}] {wp:5.1f}%")
+        print(f"  Mensal    : {fmt(monthly_rem):>8} / {fmt(monthly_total):<9} [{bar(mp,16)}] {mp:5.1f}%")
+        print(f"\n  {thin}")
+        print(f"  Prox. renovacao diaria  : {next_renewal('daily')}")
         print(f"  Prox. renovacao semanal : {next_renewal('weekly')}")
+    else:
+        print("\n  STATUS: ONLINE (sem dados detalhados neste endpoint)")
 
-    print(f"\n  Dashboard  : http://localhost:20128")
-    print(f"  Free tiers : http://localhost:20128/dashboard/free-tiers")
+    print(f"\n  Dashboard  : {OMNIROUTE_URL}")
+    print(f"  Free tiers : {OMNIROUTE_URL}/dashboard/free-tiers")
     print(f"\n{sep}\n")
 
 
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "short"
-    remaining = int(sys.argv[2]) if len(sys.argv) > 2 else SESSION_TOTAL
-
     if mode == "full":
-        report_full(remaining)
+        report_full()
     else:
-        report_short(remaining)
+        report_short()
