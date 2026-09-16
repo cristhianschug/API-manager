@@ -6,6 +6,7 @@
 <title>Anexar — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ── Design tokens — dark (default) ── */
 :root {
   --bg:           #0d0d10;
   --surface:      #111115;
@@ -24,23 +25,48 @@
   --err-dim:      rgba(239,68,68,.12);
   --warn:         #f59e0b;
   --warn-dim:     rgba(245,158,11,.12);
+  --shadow:       0 4px 24px rgba(0,0,0,.35);
   --r:            7px;
   --r-sm:         5px;
   --sw:           232px;
   --sans:         'Inter', -apple-system, sans-serif;
   --mono:         'SF Mono','Fira Code',monospace;
 }
+
+/* ── Light mode overrides ── */
+:root[data-theme="light"] {
+  --bg:           #f4f4f8;
+  --surface:      #ffffff;
+  --elevated:     #eeeef4;
+  --border:       #dddde6;
+  --border-hi:    #c4c4d2;
+  --text:         #18181f;
+  --text-2:       #55556a;
+  --text-3:       #9090a4;
+  --accent:       #5e6ad2;
+  --accent-hi:    #4352c0;
+  --accent-dim:   rgba(94,106,210,.10);
+  --ok:           #15803d;
+  --ok-dim:       rgba(21,128,61,.10);
+  --err:          #b91c1c;
+  --err-dim:      rgba(185,28,28,.10);
+  --warn:         #b45309;
+  --warn-dim:     rgba(180,83,9,.10);
+  --shadow:       0 4px 24px rgba(0,0,0,.10);
+}
+
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; transition:background .2s,color .2s; }
 
 /* ── Login ── */
-#login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; }
-.lcard { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:40px; width:100%; max-width:360px; }
+#login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; }
+.lcard { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:40px; width:100%; max-width:360px; box-shadow:var(--shadow); }
 .llogo { display:flex; align-items:center; gap:10px; margin-bottom:32px; }
 .lmark { width:30px; height:30px; background:var(--accent); border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; color:#fff; flex-shrink:0; }
 .lname { font-size:17px; font-weight:600; }
 .lcard h1 { font-size:19px; font-weight:600; margin-bottom:4px; }
 .lsub { color:var(--text-2); font-size:13px; margin-bottom:28px; }
+.login-theme { position:absolute; top:16px; right:16px; }
 
 /* ── Fields ── */
 .field { margin-bottom:14px; }
@@ -48,7 +74,7 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .field input,.field select,.field textarea {
   width:100%; background:var(--elevated); border:1px solid var(--border);
   border-radius:var(--r-sm); color:var(--text); font-size:13px; font-family:var(--sans);
-  padding:8px 11px; outline:none; transition:border-color .15s;
+  padding:8px 11px; outline:none; transition:border-color .15s,box-shadow .15s;
 }
 .field input:focus,.field select:focus,.field textarea:focus {
   border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim);
@@ -69,9 +95,29 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .btn:disabled { opacity:.38; cursor:not-allowed; }
 .btn-full { width:100%; justify-content:center; }
 
-/* ── Layout ── */
-#app { display:none; height:100vh; overflow:hidden; }
-.layout { display:flex; height:100vh; }
+/* ── App layout ── */
+#app { display:none; height:100vh; height:100dvh; overflow:hidden; flex-direction:column; }
+.layout { display:flex; flex:1; height:100%; overflow:hidden; }
+
+/* ── Mobile topbar (hidden on desktop) ── */
+.mob-topbar {
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 14px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  gap:10px;
+  z-index:200;
+}
+.mob-topbar .mob-title { font-size:14px; font-weight:600; flex:1; text-align:center; }
+.menu-btn { background:transparent; border:none; color:var(--text); font-size:18px; cursor:pointer; padding:4px 7px; border-radius:var(--r-sm); line-height:1; flex-shrink:0; }
+.menu-btn:hover { background:var(--elevated); }
+
+/* ── Mobile overlay ── */
+#mob-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:799; }
+#mob-overlay.open { display:block; }
 
 /* ── Sidebar ── */
 #sidebar { width:var(--sw); background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
@@ -86,28 +132,30 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .nav-icon { font-size:14px; width:16px; text-align:center; }
 .sb-foot { padding:12px 14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:8px; }
 .sb-user { flex:1; font-size:12.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.theme-btn { flex-shrink:0; padding:4px 8px; font-size:14px; line-height:1; }
 
-/* ── Main ── */
-#main { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+/* ── Main area ── */
+#main { flex:1; overflow-y:auto; display:flex; flex-direction:column; min-width:0; }
 .view { display:none; padding:28px 32px; }
 .view.active { display:block; }
-.view-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:22px; gap:12px; }
+.view-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:22px; gap:12px; flex-wrap:wrap; }
 .view-title { font-size:17px; font-weight:600; }
 .view-sub { font-size:12.5px; color:var(--text-2); margin-top:2px; }
 
 /* ── KPI grid ── */
-.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:22px; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:22px; }
 .kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; }
 .kpi-lbl { font-size:11px; color:var(--text-3); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
 .kpi-val { font-size:26px; font-weight:600; margin-top:4px; letter-spacing:-.02em; }
 
 /* ── Table ── */
 .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+.table-scroll { overflow-x:auto; }
 .table-wrap table { width:100%; border-collapse:collapse; }
-.table-wrap th { background:var(--elevated); padding:9px 14px; text-align:left; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); border-bottom:1px solid var(--border); }
+.table-wrap th { background:var(--elevated); padding:9px 14px; text-align:left; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); border-bottom:1px solid var(--border); white-space:nowrap; }
 .table-wrap td { padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; }
 .table-wrap tr:last-child td { border-bottom:none; }
-.table-wrap tr:hover td { background:rgba(255,255,255,.018); }
+.table-wrap tr:hover td { background:rgba(128,128,128,.04); }
 .empty-state { text-align:center; padding:44px 20px; color:var(--text-3); }
 .empty-state p { margin-top:6px; font-size:12.5px; }
 
@@ -122,40 +170,40 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .s-5xx  { display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; font-family:var(--mono); background:var(--err-dim);  color:var(--err); }
 
 /* ── Toast ── */
-#toast-bar { position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
-.toast { padding:11px 15px; border-radius:var(--r-sm); font-size:13px; max-width:320px; pointer-events:auto; animation:tin .2s ease; }
+#toast-bar { position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:320px; }
+.toast { padding:11px 15px; border-radius:var(--r-sm); font-size:13px; pointer-events:auto; animation:tin .2s ease; }
 @keyframes tin { from { transform:translateX(16px); opacity:0; } }
 .t-ok  { background:var(--ok-dim);  color:var(--ok);  border:1px solid rgba(34,197,94,.2); }
 .t-err { background:var(--err-dim); color:var(--err); border:1px solid rgba(239,68,68,.2); }
 .t-info { background:var(--accent-dim); color:var(--accent-hi); border:1px solid rgba(94,106,210,.2); }
 
-/* ── Modal ── */
-.backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:900; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+/* ── Modal / Backdrop ── */
+.backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:900; align-items:center; justify-content:center; backdrop-filter:blur(2px); padding:16px; }
 .backdrop.open { display:flex; }
-.modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:26px; width:90%; max-width:500px; max-height:88vh; overflow-y:auto; animation:min .18s ease; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:26px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; animation:min .18s ease; box-shadow:var(--shadow); }
 .modal-lg { max-width:600px; }
 @keyframes min { from { transform:scale(.96); opacity:0; } }
-.modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+.modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; gap:12px; }
 .modal-ttl { font-size:15px; font-weight:600; }
-.modal-x { width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:6px; background:transparent; border:none; color:var(--text-3); cursor:pointer; font-size:17px; }
+.modal-x { width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:6px; background:transparent; border:none; color:var(--text-3); cursor:pointer; font-size:17px; flex-shrink:0; }
 .modal-x:hover { background:var(--elevated); color:var(--text); }
 
 /* ── Stepper ── */
-.stepper { display:flex; align-items:center; margin-bottom:26px; }
-.step-item { display:flex; align-items:center; flex:1; }
+.stepper { display:flex; align-items:center; margin-bottom:26px; overflow-x:auto; padding-bottom:4px; }
+.step-item { display:flex; align-items:center; flex:1; min-width:0; }
 .step-item:last-child { flex:none; }
 .step-dot { width:22px; height:22px; border-radius:50%; border:2px solid var(--border-hi); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; color:var(--text-3); flex-shrink:0; transition:all .2s; }
 .step-item.s-active .step-dot { border-color:var(--accent); background:var(--accent); color:#fff; }
 .step-item.s-done .step-dot   { border-color:var(--ok); background:var(--ok); color:#fff; }
-.step-line { flex:1; height:1px; background:var(--border); margin:0 6px; }
+.step-line { flex:1; height:1px; background:var(--border); margin:0 6px; min-width:8px; }
 .step-item.s-done .step-line  { background:var(--ok); }
-.step-lbl { font-size:10.5px; color:var(--text-3); margin-left:5px; }
+.step-lbl { font-size:10.5px; color:var(--text-3); margin-left:5px; white-space:nowrap; }
 .step-item.s-active .step-lbl { color:var(--text); font-weight:500; }
 
-/* ── Step pane (show/hide) ── */
+/* ── Step pane ── */
 .step-pane { display:none; }
 .step-pane.active { display:block; }
-.step-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:22px; }
+.step-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:22px; flex-wrap:wrap; }
 
 /* ── Permission matrix ── */
 .perm-table { width:100%; border-collapse:collapse; }
@@ -186,25 +234,86 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 .filter-bar select { min-width:130px; }
 
 /* ── Pagination ── */
-.pager { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--text-3); }
+.pager { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--text-3); flex-wrap:wrap; gap:8px; }
 
 /* ── Info grid ── */
 .info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:18px; }
 .ii-lbl { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); }
-.ii-val { font-size:13px; margin-top:2px; }
+.ii-val { font-size:13px; margin-top:2px; word-break:break-all; }
 
-/* ── Inline actions ── */
-.row-actions { display:flex; gap:5px; }
+/* ── Row actions ── */
+.row-actions { display:flex; gap:5px; flex-wrap:nowrap; }
 
 /* ── Docs link ── */
 .docs-link { font-size:12px; color:var(--accent-hi); text-decoration:none; }
 .docs-link:hover { text-decoration:underline; }
 
-/* ── Responsive ── */
+/* ── Spinner ── */
+.spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; display:inline-block; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── Client panel ── */
+#client-panel { display:none; margin-top:24px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:20px 24px; }
+
+/* ── Responsive: tablet ── */
+@media (max-width:900px) {
+  :root { --sw: 200px; }
+  .view { padding:20px; }
+}
+
+/* ── Responsive: mobile ── */
 @media (max-width:768px) {
-  #sidebar { display:none; }
-  .view { padding:16px; }
-  .kpi-grid { grid-template-columns:1fr 1fr; }
+  /* Sidebar becomes a slide-in overlay */
+  #sidebar {
+    position:fixed;
+    left:0; top:0; bottom:0;
+    z-index:800;
+    transform:translateX(-100%);
+    transition:transform .22s ease;
+    box-shadow:4px 0 32px rgba(0,0,0,.3);
+    width:var(--sw);
+  }
+  #sidebar.mob-open { transform:translateX(0); }
+
+  /* App stacks vertically to fit mobile */
+  #app { flex-direction:column; }
+  .layout { flex:1; overflow:hidden; }
+  .mob-topbar { display:flex; }
+  #main { overflow-y:auto; }
+
+  /* Views */
+  .view { padding:14px; }
+  .kpi-grid { grid-template-columns:1fr 1fr; gap:8px; }
+  .view-head { flex-direction:column; align-items:flex-start; }
+  .view-head .btn { width:100%; justify-content:center; }
+
+  /* Tables scroll horizontally */
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .table-wrap table { min-width:560px; }
+
+  /* Filter bar stacks */
+  .filter-bar { flex-direction:column; align-items:stretch; }
+  .filter-bar select,.filter-bar .field { min-width:unset; width:100%; }
+
+  /* Forms stack to single column */
+  .form-row { grid-template-columns:1fr; }
+
+  /* Modal full-ish width */
+  .modal,.modal-lg { max-width:100%; padding:20px 16px; }
+
+  /* Stepper: hide labels on narrow */
+  .step-lbl { display:none; }
+
+  /* Client panel */
+  #client-panel { padding:14px; margin-top:16px; }
+
+  /* Pager */
+  .pager { justify-content:center; }
+}
+
+@media (max-width:400px) {
+  .kpi-grid { grid-template-columns:1fr; }
+  .kpi-val { font-size:22px; }
 }
 </style>
 </head>
@@ -214,6 +323,11 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 
 <!-- ── Login ──────────────────────────────── -->
 <div id="login-screen">
+  <div style="position:relative;">
+    <!-- Theme toggle visible on login screen -->
+    <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema"
+      style="position:absolute;top:-52px;right:0;">☀</button>
+  </div>
   <div class="lcard">
     <div class="llogo"><div class="lmark">A</div><span class="lname">Anexar</span></div>
     <h1>Entrar no painel</h1>
@@ -229,6 +343,16 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 
 <!-- ── App ────────────────────────────────── -->
 <div id="app">
+  <!-- Mobile sidebar overlay -->
+  <div id="mob-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Mobile topbar (hidden on desktop) -->
+  <div class="mob-topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Abrir menu">☰</button>
+    <span class="mob-title">Anexar Admin</span>
+    <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema">☀</button>
+  </div>
+
   <div class="layout">
 
     <!-- Sidebar -->
@@ -244,6 +368,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       </div>
       <div class="sb-foot">
         <span class="sb-user" id="sb-username"></span>
+        <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema">☀</button>
         <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
       </div>
     </nav>
@@ -286,9 +411,9 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
           </table>
         </div>
 
-        <!-- Client detail panel -->
+        <!-- Client detail panel (inline, not a modal) -->
         <div id="client-panel">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px">
             <div style="font-size:15px;font-weight:600" id="panel-name">—</div>
             <button class="btn btn-ghost btn-sm" onclick="closePanel()">Fechar</button>
           </div>
@@ -302,16 +427,18 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
             <div style="font-size:13px;font-weight:600;margin-bottom:12px">Gerar nova API Key</div>
             <div class="form-row" style="align-items:flex-end">
               <div class="field"><label>Nome da key</label><input type="text" id="key-name" placeholder="Ex: Integração ERP"></div>
-              <div>
+              <div style="padding-top:4px">
                 <button class="btn btn-primary" onclick="createKey()">Gerar</button>
               </div>
             </div>
             <div style="margin-top:12px">
               <div style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:8px">Permissões</div>
-              <table class="perm-table" id="new-key-perms">
-                <thead><tr><th>Recurso</th><th>Leitura</th><th>Escrita</th></tr></thead>
-                <tbody id="new-key-perms-body"></tbody>
-              </table>
+              <div style="overflow-x:auto">
+                <table class="perm-table" id="new-key-perms" style="min-width:320px">
+                  <thead><tr><th>Recurso</th><th>Leitura</th><th>Escrita</th></tr></thead>
+                  <tbody id="new-key-perms-body"></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -397,7 +524,6 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       <button class="modal-x" onclick="closeNewClientModal()" aria-label="Fechar">×</button>
     </div>
 
-    <!-- Stepper -->
     <div class="stepper" id="stepper" aria-label="Progresso">
       <div class="step-item s-active" data-step="1"><div class="step-dot">1</div><span class="step-lbl">Dados</span><div class="step-line"></div></div>
       <div class="step-item" data-step="2"><div class="step-dot">2</div><span class="step-lbl">Conexão</span><div class="step-line"></div></div>
@@ -406,7 +532,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       <div class="step-item" data-step="5"><div class="step-dot">5</div><span class="step-lbl">Concluído</span></div>
     </div>
 
-    <!-- Step 1: Dados -->
+    <!-- Step 1 -->
     <div class="step-pane active" id="sp-1">
       <div class="form-row">
         <div class="field"><label>Nome do cliente *</label><input type="text" id="nc-name" placeholder="Ex: Empresa ABC"></div>
@@ -416,7 +542,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       <div class="step-actions"><button class="btn btn-primary" onclick="ncStep(2)">Próximo →</button></div>
     </div>
 
-    <!-- Step 2: Conexão -->
+    <!-- Step 2 -->
     <div class="step-pane" id="sp-2">
       <div class="field">
         <label>Arquivo confrede.ini *</label>
@@ -429,20 +555,22 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       </div>
     </div>
 
-    <!-- Step 3: Permissões -->
+    <!-- Step 3 -->
     <div class="step-pane" id="sp-3">
       <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">Configure as permissões padrão para a primeira API Key deste cliente.</p>
-      <table class="perm-table">
-        <thead><tr><th>Recurso</th><th>Leitura</th><th>Escrita</th></tr></thead>
-        <tbody id="nc-perms-body"></tbody>
-      </table>
+      <div style="overflow-x:auto">
+        <table class="perm-table" style="min-width:280px">
+          <thead><tr><th>Recurso</th><th>Leitura</th><th>Escrita</th></tr></thead>
+          <tbody id="nc-perms-body"></tbody>
+        </table>
+      </div>
       <div class="step-actions">
         <button class="btn btn-ghost" onclick="ncStep(2)">← Voltar</button>
         <button class="btn btn-primary" onclick="ncStep(4)">Próximo →</button>
       </div>
     </div>
 
-    <!-- Step 4: API Key -->
+    <!-- Step 4 -->
     <div class="step-pane" id="sp-4">
       <div class="field"><label>Nome da API Key *</label><input type="text" id="nc-key-name" placeholder="Ex: Produção" value="default"></div>
       <div class="step-actions">
@@ -451,11 +579,11 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       </div>
     </div>
 
-    <!-- Step 5: Concluído -->
+    <!-- Step 5 -->
     <div class="step-pane" id="sp-5">
       <div class="warn-box">⚠ Copie a API Key agora — ela não será exibida novamente.</div>
       <div class="code-blk" id="nc-result-key"></div>
-      <div style="margin-top:14px;display:flex;gap:8px">
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="copyKey('nc-result-key')">Copiar key</button>
         <a id="nc-docs-link" class="btn btn-ghost" href="#" target="_blank">Ver documentação →</a>
       </div>
@@ -475,7 +603,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
     </div>
     <div class="warn-box">⚠ Copie agora — esta é a única vez que você verá a chave completa.</div>
     <div class="code-blk" id="key-modal-val"></div>
-    <div style="display:flex;gap:8px;margin-top:16px">
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="copyKey('key-modal-val')">Copiar</button>
       <button class="btn btn-ghost" onclick="closeKeyModal()">Fechar</button>
     </div>
@@ -486,6 +614,41 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 'use strict';
 const API = '/admin/api';
 const RESOURCES = ['clientes','produtos','pedidos','parcelas','fornecedores'];
+
+// ── Theme ──────────────────────────────────────────────────────────────────
+function initTheme() {
+  let saved;
+  try { saved = localStorage.getItem('anexar_theme'); } catch {}
+  const theme = saved || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  _syncThemeBtns(theme);
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('anexar_theme', next); } catch {}
+  _syncThemeBtns(next);
+}
+
+function _syncThemeBtns(theme) {
+  document.querySelectorAll('.theme-btn').forEach(b => {
+    b.textContent = theme === 'dark' ? '☀' : '☾';
+    b.title = theme === 'dark' ? 'Modo claro' : 'Modo escuro';
+  });
+}
+
+// ── Mobile sidebar ─────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const open = document.getElementById('sidebar').classList.toggle('mob-open');
+  document.getElementById('mob-overlay').classList.toggle('open', open);
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('mob-open');
+  document.getElementById('mob-overlay').classList.remove('open');
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function esc(s) {
@@ -527,19 +690,18 @@ async function checkSession() {
 
 document.getElementById('login-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const err = document.getElementById('l-err');
-  err.style.display = 'none';
+  const errEl = document.getElementById('l-err');
+  errEl.style.display = 'none';
   const fd = new FormData();
   fd.append('username', document.getElementById('l-user').value);
   fd.append('password', document.getElementById('l-pass').value);
   try {
-    await fetch(`${API}/login`, { method: 'POST', body: fd }).then(r => {
-      if (!r.ok) throw new Error();
-    });
+    const r = await fetch(`${API}/login`, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error();
     showApp(true);
   } catch {
-    err.textContent = 'Credenciais inválidas.';
-    err.style.display = 'block';
+    errEl.textContent = 'Credenciais inválidas.';
+    errEl.style.display = 'block';
   }
 });
 
@@ -549,7 +711,7 @@ function logout() {
 
 function showApp(show) {
   document.getElementById('login-screen').style.display = show ? 'none' : 'flex';
-  document.getElementById('app').style.display = show ? 'block' : 'none';
+  document.getElementById('app').style.display = show ? 'flex' : 'none';
   document.getElementById('l-pass').value = '';
   if (show) {
     const u = document.getElementById('l-user').value || 'admin';
@@ -561,6 +723,7 @@ function showApp(show) {
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 function nav(view) {
+  closeSidebar();
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
@@ -572,10 +735,7 @@ function nav(view) {
 // ── Overview ───────────────────────────────────────────────────────────────
 async function loadOverview() {
   try {
-    const [clients, metrics] = await Promise.all([
-      api('/clients'),
-      api('/metrics'),
-    ]);
+    const [clients, metrics] = await Promise.all([api('/clients'), api('/metrics')]);
     document.getElementById('kpi-clients').textContent = clients.length;
     document.getElementById('kpi-reqs').textContent = metrics.total_requests ?? '—';
     document.getElementById('kpi-errs').textContent = metrics.error_count ?? '—';
@@ -585,8 +745,8 @@ async function loadOverview() {
     tbody.innerHTML = '';
     (metrics.top_routes || []).forEach(r => {
       const tr = tbody.insertRow();
-      const td1 = tr.insertCell(); td1.appendChild(document.createTextNode(r.path));
-      const td2 = tr.insertCell(); td2.appendChild(document.createTextNode(r.count));
+      tr.insertCell().textContent = r.path;
+      tr.insertCell().textContent = r.count;
     });
     if (!tbody.rows.length) tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Sem dados</td></tr>';
   } catch (e) { toast('Erro ao carregar overview: ' + e.message, 'err'); }
@@ -612,15 +772,15 @@ function renderClients(clients) {
   }
   clients.forEach(c => {
     const tr = tbody.insertRow();
-    const tdName  = tr.insertCell(); tdName.textContent  = c.name;
-    const tdSlug  = tr.insertCell(); tdSlug.innerHTML    = `<code>${esc(c.slug)}</code>`;
-    const tdSt    = tr.insertCell(); tdSt.innerHTML      = `<span class="badge ${c.status === 'active' ? 'b-ok' : 'b-warn'}">${esc(c.status)}</span>`;
-    const tdAt    = tr.insertCell(); tdAt.textContent    = fmtDate(c.created_at);
-    const tdDocs  = tr.insertCell();
-    const docsA   = document.createElement('a');
-    docsA.className = 'docs-link'; docsA.target = '_blank';
-    docsA.href = `/docs/${encodeURIComponent(c.slug)}`; docsA.textContent = '/docs';
-    tdDocs.appendChild(docsA);
+    tr.insertCell().textContent = c.name;
+    const tdSlug = tr.insertCell(); tdSlug.innerHTML = `<code>${esc(c.slug)}</code>`;
+    const tdSt = tr.insertCell(); tdSt.innerHTML = `<span class="badge ${c.status === 'active' ? 'b-ok' : 'b-warn'}">${esc(c.status)}</span>`;
+    tr.insertCell().textContent = fmtDate(c.created_at);
+    const tdDocs = tr.insertCell();
+    const a = document.createElement('a');
+    a.className = 'docs-link'; a.target = '_blank';
+    a.href = `/docs/${encodeURIComponent(c.slug)}`; a.textContent = '/docs';
+    tdDocs.appendChild(a);
     const tdAct = tr.insertCell(); tdAct.className = 'row-actions';
     const btn = document.createElement('button');
     btn.className = 'btn btn-ghost btn-sm'; btn.textContent = 'Gerenciar keys';
@@ -637,20 +797,17 @@ async function openPanel(clientId) {
   const panel = document.getElementById('client-panel');
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
   try {
     const c = await api(`/clients/${clientId}`);
     document.getElementById('panel-name').textContent = c.name;
     const ig = document.getElementById('panel-info');
     ig.innerHTML = '';
-    [
-      ['Slug', c.slug], ['Status', c.status], ['Host', c.host],
-      ['Porta', c.port], ['Database', c.database_path],
-      ['Último teste', c.last_tested_at ? fmt(c.last_tested_at) : 'Nunca'],
-      ['Conexão OK', c.last_test_ok ? 'Sim' : 'Não'],
+    [['Slug', c.slug], ['Status', c.status], ['Host', c.host],
+     ['Porta', c.port], ['Database', c.database_path],
+     ['Último teste', c.last_tested_at ? fmt(c.last_tested_at) : 'Nunca'],
+     ['Conexão OK', c.last_test_ok ? 'Sim' : 'Não'],
     ].forEach(([l, v]) => {
       const div = document.createElement('div');
-      div.className = 'info-item';
       div.innerHTML = `<div class="ii-lbl">${esc(l)}</div><div class="ii-val">${esc(String(v ?? '—'))}</div>`;
       ig.appendChild(div);
     });
@@ -677,16 +834,14 @@ async function loadKeys(clientId) {
     }
     keys.forEach(k => {
       const tr = tbody.insertRow();
-      const tdN = tr.insertCell(); tdN.textContent = k.name;
+      tr.insertCell().textContent = k.name;
       const tdP = tr.insertCell(); tdP.innerHTML = `<code>${esc(k.prefix)}…</code>`;
-      // scopes summary
       const scopeList = Object.entries(k.scopes || {})
         .filter(([, p]) => p.read || p.write)
-        .map(([r, p]) => r + (p.write ? ' rw' : ' r'))
-        .join(', ');
+        .map(([r, p]) => r + (p.write ? ' rw' : ' r')).join(', ');
       const tdS = tr.insertCell(); tdS.innerHTML = `<span style="font-size:11.5px;color:var(--text-2)">${esc(scopeList || '—')}</span>`;
       const tdSt = tr.insertCell(); tdSt.innerHTML = `<span class="badge ${k.status === 'active' ? 'b-ok' : 'b-err'}">${esc(k.status)}</span>`;
-      const tdU = tr.insertCell(); tdU.textContent = k.last_used_at ? fmt(k.last_used_at) : '—';
+      tr.insertCell().textContent = k.last_used_at ? fmt(k.last_used_at) : '—';
       const tdA = tr.insertCell(); tdA.className = 'row-actions';
       if (k.status === 'active') {
         const bRot = document.createElement('button');
@@ -708,13 +863,10 @@ function buildNewKeyPerms() {
   tbody.innerHTML = '';
   RESOURCES.forEach(r => {
     const tr = tbody.insertRow();
-    const tdN = tr.insertCell(); tdN.textContent = r;
+    tr.insertCell().textContent = r;
     ['read','write'].forEach(mode => {
       const td = tr.insertCell();
-      td.innerHTML = `<label class="toggle">
-        <input type="checkbox" id="nkp-${r}-${mode}" ${mode === 'read' ? 'checked' : ''}>
-        <span class="ttrack"></span>
-      </label>`;
+      td.innerHTML = `<label class="toggle"><input type="checkbox" id="nkp-${r}-${mode}" ${mode === 'read' ? 'checked' : ''}><span class="ttrack"></span></label>`;
     });
   });
 }
@@ -723,7 +875,6 @@ async function createKey() {
   if (!currentClientId) return;
   const name = document.getElementById('key-name').value.trim();
   if (!name) { toast('Informe um nome para a key', 'err'); return; }
-
   const scopes = {};
   RESOURCES.forEach(r => {
     scopes[r] = {
@@ -764,38 +915,31 @@ async function rotateKey(id) {
   } catch (e) { toast(e.message, 'err'); }
 }
 
-function closeKeyModal() {
-  document.getElementById('key-modal').classList.remove('open');
-}
+function closeKeyModal() { document.getElementById('key-modal').classList.remove('open'); }
 
 function copyKey(elId) {
   const txt = document.getElementById(elId).textContent;
   navigator.clipboard.writeText(txt).then(() => toast('Copiado para o clipboard', 'ok'));
 }
 
-// ── New client modal (multi-step) ──────────────────────────────────────────
+// ── New client modal ───────────────────────────────────────────────────────
 let ncCurrentStep = 1;
-let ncCreatedSlug = '';
 
 function buildNcPerms() {
   const tbody = document.getElementById('nc-perms-body');
   tbody.innerHTML = '';
   RESOURCES.forEach(r => {
     const tr = tbody.insertRow();
-    const tdN = tr.insertCell(); tdN.textContent = r;
+    tr.insertCell().textContent = r;
     ['read','write'].forEach(mode => {
       const td = tr.insertCell();
-      td.innerHTML = `<label class="toggle">
-        <input type="checkbox" id="ncp-${r}-${mode}" ${mode === 'read' ? 'checked' : ''}>
-        <span class="ttrack"></span>
-      </label>`;
+      td.innerHTML = `<label class="toggle"><input type="checkbox" id="ncp-${r}-${mode}" ${mode === 'read' ? 'checked' : ''}><span class="ttrack"></span></label>`;
     });
   });
 }
 
 function openNewClientModal() {
   ncCurrentStep = 1;
-  ncCreatedSlug = '';
   document.getElementById('nc-name').value = '';
   document.getElementById('nc-slug').value = '';
   document.getElementById('nc-file').value = '';
@@ -807,34 +951,30 @@ function openNewClientModal() {
   document.getElementById('new-client-modal').classList.add('open');
 }
 
-function closeNewClientModal() {
-  document.getElementById('new-client-modal').classList.remove('open');
-}
+function closeNewClientModal() { document.getElementById('new-client-modal').classList.remove('open'); }
 
-// auto-slug from name
 document.getElementById('nc-name').addEventListener('input', function () {
-  const slug = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  document.getElementById('nc-slug').value = slug;
+  document.getElementById('nc-slug').value =
+    this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 });
 
 function renderStepper(active) {
   document.querySelectorAll('.step-item').forEach(el => {
     const n = parseInt(el.dataset.step);
     el.classList.toggle('s-active', n === active);
-    el.classList.toggle('s-done',   n < active);
+    el.classList.toggle('s-done', n < active);
   });
 }
 
 function ncStep(to) {
-  // Validate current before advancing
   if (to > ncCurrentStep) {
     if (ncCurrentStep === 1) {
-      const name = document.getElementById('nc-name').value.trim();
-      const slug = document.getElementById('nc-slug').value.trim();
-      if (!name || !slug) { toast('Preencha nome e slug', 'err'); return; }
+      if (!document.getElementById('nc-name').value.trim() || !document.getElementById('nc-slug').value.trim()) {
+        toast('Preencha nome e slug', 'err'); return;
+      }
     }
-    if (ncCurrentStep === 2) {
-      if (!document.getElementById('nc-file').files.length) { toast('Selecione o arquivo confrede.ini', 'err'); return; }
+    if (ncCurrentStep === 2 && !document.getElementById('nc-file').files.length) {
+      toast('Selecione o arquivo confrede.ini', 'err'); return;
     }
   }
   ncCurrentStep = to;
@@ -843,13 +983,11 @@ function ncStep(to) {
 }
 
 async function submitNewClient() {
-  const name     = document.getElementById('nc-name').value.trim();
-  const slug     = document.getElementById('nc-slug').value.trim();
-  const file     = document.getElementById('nc-file').files[0];
-  const keyName  = document.getElementById('nc-key-name').value.trim() || 'default';
-
+  const name    = document.getElementById('nc-name').value.trim();
+  const slug    = document.getElementById('nc-slug').value.trim();
+  const file    = document.getElementById('nc-file').files[0];
+  const keyName = document.getElementById('nc-key-name').value.trim() || 'default';
   if (!name || !slug || !file) { toast('Preencha todos os campos', 'err'); return; }
-
   const scopes = {};
   RESOURCES.forEach(r => {
     scopes[r] = {
@@ -857,30 +995,19 @@ async function submitNewClient() {
       write: document.getElementById(`ncp-${r}-write`)?.checked ?? false,
     };
   });
-
   const fd = new FormData();
-  fd.append('name', name);
-  fd.append('slug', slug);
-  fd.append('confrede_file', file);
-
+  fd.append('name', name); fd.append('slug', slug); fd.append('confrede_file', file);
   try {
-    // 1) create client
     const r1 = await fetch(`${API}/clients`, { method: 'POST', body: fd });
     if (!r1.ok) { const b = await r1.json(); throw new Error(b.detail || 'Erro ao criar cliente'); }
     const client = await r1.json();
-
-    // 2) create initial API key
     const fd2 = new FormData();
-    fd2.append('name', keyName);
-    fd2.append('scopes_json', JSON.stringify(scopes));
+    fd2.append('name', keyName); fd2.append('scopes_json', JSON.stringify(scopes));
     const r2 = await fetch(`${API}/clients/${client.id}/keys`, { method: 'POST', body: fd2 });
     if (!r2.ok) { const b = await r2.json(); throw new Error(b.detail || 'Erro ao criar key'); }
     const key = await r2.json();
-
-    ncCreatedSlug = slug;
     document.getElementById('nc-result-key').textContent = key.full_key;
-    const docsLink = document.getElementById('nc-docs-link');
-    docsLink.href = `/docs/${encodeURIComponent(slug)}`;
+    document.getElementById('nc-docs-link').href = `/docs/${encodeURIComponent(slug)}`;
     ncStep(5);
   } catch (e) { toast(e.message, 'err'); }
 }
@@ -927,13 +1054,12 @@ async function fetchLogs() {
   const tbody = document.getElementById('logs-body');
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px"><div class="spinner"></div></td></tr>';
   const params = new URLSearchParams({ limit: LOGS_LIMIT, offset: logsPage * LOGS_LIMIT });
-  const cid = document.getElementById('log-client').value;
+  const cid    = document.getElementById('log-client').value;
   const method = document.getElementById('log-method').value;
   const status = document.getElementById('log-status').value;
-  if (cid) params.set('client_id', cid);
+  if (cid)    params.set('client_id', cid);
   if (method) params.set('method', method);
   if (status) params.set('status_code', status);
-
   try {
     const data = await api('/logs?' + params);
     tbody.innerHTML = '';
@@ -947,8 +1073,7 @@ async function fetchLogs() {
         tr.insertCell().innerHTML = `<code>${esc(l.method)}</code>`;
         tr.insertCell().textContent = l.path;
         const sc = l.status_code;
-        const cls = sc < 400 ? 's-2xx' : sc < 500 ? 's-4xx' : 's-5xx';
-        tr.insertCell().innerHTML = `<span class="${cls}">${esc(String(sc))}</span>`;
+        tr.insertCell().innerHTML = `<span class="${sc < 400 ? 's-2xx' : sc < 500 ? 's-4xx' : 's-5xx'}">${esc(String(sc))}</span>`;
         tr.insertCell().textContent = l.duration_ms != null ? l.duration_ms + 'ms' : '—';
       });
     }
@@ -959,23 +1084,20 @@ async function fetchLogs() {
   } catch (e) { toast('Erro logs: ' + e.message, 'err'); }
 }
 
-// ── Keyboard shortcuts ─────────────────────────────────────────────────────
+// ── Keyboard ───────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.backdrop.open').forEach(m => {
-      m.classList.remove('open');
-    });
+    closeSidebar();
+    document.querySelectorAll('.backdrop.open').forEach(m => m.classList.remove('open'));
   }
 });
 
-// Close modals on backdrop click
 document.querySelectorAll('.backdrop').forEach(bd => {
-  bd.addEventListener('click', e => {
-    if (e.target === bd) bd.classList.remove('open');
-  });
+  bd.addEventListener('click', e => { if (e.target === bd) bd.classList.remove('open'); });
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────────
+initTheme();
 checkSession();
 </script>
 </body>

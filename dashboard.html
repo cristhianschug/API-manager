@@ -6,6 +6,7 @@
 <title>Anexar API</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ── Design tokens — dark (default) ── */
 :root {
   --bg:         #0d0d10;
   --surface:    #111115;
@@ -23,31 +24,63 @@
   --err-dim:    rgba(239,68,68,.12);
   --warn:       #f59e0b;
   --warn-dim:   rgba(245,158,11,.12);
+  --shadow:     0 2px 12px rgba(0,0,0,.3);
   --r:          7px;
   --r-sm:       5px;
   --sans:       'Inter', -apple-system, sans-serif;
   --mono:       'SF Mono','Fira Code',monospace;
 }
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
 
-/* Header */
+/* ── Light mode overrides ── */
+:root[data-theme="light"] {
+  --bg:         #f4f4f8;
+  --surface:    #ffffff;
+  --elevated:   #eeeef4;
+  --border:     #dddde6;
+  --text:       #18181f;
+  --text-2:     #55556a;
+  --text-3:     #9090a4;
+  --accent:     #5e6ad2;
+  --accent-hi:  #4352c0;
+  --accent-dim: rgba(94,106,210,.10);
+  --ok:         #15803d;
+  --ok-dim:     rgba(21,128,61,.10);
+  --err:        #b91c1c;
+  --err-dim:    rgba(185,28,28,.10);
+  --warn:       #b45309;
+  --warn-dim:   rgba(180,83,9,.10);
+  --shadow:     0 2px 12px rgba(0,0,0,.08);
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; transition:background .2s,color .2s; }
+
+/* ── Header ── */
 .header {
   background:var(--surface);
   border-bottom:1px solid var(--border);
-  padding:14px 24px;
+  padding:12px 20px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:16px;
+  gap:12px;
   position:sticky;
   top:0;
   z-index:100;
+  box-shadow:var(--shadow);
 }
-.header-logo { display:flex; align-items:center; gap:9px; }
+.header-logo { display:flex; align-items:center; gap:9px; flex-shrink:0; }
 .logo-mark { width:27px; height:27px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0; }
 .logo-name { font-size:14.5px; font-weight:600; }
-.header-right { display:flex; align-items:center; gap:12px; }
+
+.header-center {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-width:0;
+}
 .api-key-wrap { display:flex; align-items:center; gap:8px; }
 .api-key-wrap label { font-size:12px; color:var(--text-2); white-space:nowrap; }
 .api-key-wrap input {
@@ -58,53 +91,64 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
   font-size:12.5px;
   font-family:var(--mono);
   padding:6px 10px;
-  width:220px;
+  width:240px;
   outline:none;
-  transition:border-color .15s;
+  transition:border-color .15s,box-shadow .15s;
 }
 .api-key-wrap input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+
+.header-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+/* ── Buttons ── */
 .btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:none; border-radius:var(--r-sm); font-size:12.5px; font-weight:500; font-family:var(--sans); cursor:pointer; transition:all .12s; white-space:nowrap; }
 .btn-primary { background:var(--accent); color:#fff; }
 .btn-primary:hover { background:var(--accent-hi); }
 .btn-ghost { background:transparent; color:var(--text-2); border:1px solid var(--border); }
 .btn-ghost:hover { background:var(--elevated); color:var(--text); }
+.theme-btn { padding:5px 8px; font-size:14px; line-height:1; }
+
+/* ── Status pill ── */
 .status-pill { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-2); }
 .status-dot { width:7px; height:7px; border-radius:50%; background:var(--text-3); flex-shrink:0; }
-.status-dot.ok   { background:var(--ok); box-shadow:0 0 6px rgba(34,197,94,.5); }
-.status-dot.err  { background:var(--err); }
-.docs-btn { font-size:12px; color:var(--accent-hi); text-decoration:none; }
+.status-dot.ok  { background:var(--ok); box-shadow:0 0 6px rgba(34,197,94,.5); }
+.status-dot.err { background:var(--err); }
+
+.docs-btn { font-size:12px; color:var(--accent-hi); text-decoration:none; white-space:nowrap; }
 .docs-btn:hover { text-decoration:underline; }
 
-/* Main content */
-.container { max-width:1300px; margin:0 auto; padding:24px 24px; }
+/* ── Main content ── */
+.container { max-width:1300px; margin:0 auto; padding:22px 20px; }
 
-/* Auth notice */
+/* ── Auth notice ── */
 #auth-notice {
   background:var(--accent-dim);
   border:1px solid rgba(94,106,210,.25);
   border-radius:var(--r);
-  padding:20px 24px;
-  margin-bottom:24px;
+  padding:18px 22px;
+  margin-bottom:22px;
   display:none;
 }
 #auth-notice p { font-size:13px; color:var(--accent-hi); }
 #auth-notice .hint { font-size:12px; color:var(--text-2); margin-top:4px; }
 
-/* KPI grid */
-.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:22px; }
+/* ── KPI grid ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:10px; margin-bottom:22px; }
 .kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; }
 .kpi-lbl { font-size:11px; color:var(--text-3); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
 .kpi-val { font-size:26px; font-weight:600; margin-top:4px; letter-spacing:-.02em; }
 .kpi-sub { font-size:11.5px; color:var(--text-3); margin-top:2px; }
 
-/* Tabs */
+/* ── Tabs ── */
 .tabs-bar {
   display:flex;
   gap:2px;
   margin-bottom:16px;
   border-bottom:1px solid var(--border);
   overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
 }
+.tabs-bar::-webkit-scrollbar { display:none; }
 .tab-btn {
   padding:9px 16px;
   background:transparent;
@@ -117,16 +161,18 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
   cursor:pointer;
   white-space:nowrap;
   transition:all .15s;
+  flex-shrink:0;
 }
 .tab-btn:hover { color:var(--text); }
 .tab-btn.active { color:var(--accent-hi); border-bottom-color:var(--accent-hi); font-weight:500; }
 
-/* Table panel */
+/* ── Tab panels ── */
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
 
-/* Table */
+/* ── Table ── */
 .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+.table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .table-wrap table { width:100%; border-collapse:collapse; }
 .table-wrap th {
   background:var(--elevated);
@@ -138,49 +184,75 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
   letter-spacing:.07em;
   color:var(--text-3);
   border-bottom:1px solid var(--border);
+  white-space:nowrap;
 }
 .table-wrap td { padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; }
 .table-wrap tr:last-child td { border-bottom:none; }
-.table-wrap tr:hover td { background:rgba(255,255,255,.017); }
+.table-wrap tr:hover td { background:rgba(128,128,128,.04); }
 
-/* Badges */
+/* ── Badges ── */
 .badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; }
 .badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
 .b-ok   { background:var(--ok-dim);  color:var(--ok); }
 .b-warn { background:var(--warn-dim);color:var(--warn); }
 .b-info { background:var(--accent-dim); color:var(--accent-hi); }
 
-/* Masked */
+/* ── Masked values ── */
 .masked { font-family:var(--mono); font-size:12px; color:var(--text-2); }
 
-/* State rows */
+/* ── State rows ── */
 .row-loading { text-align:center; padding:32px; color:var(--text-3); }
 .row-err     { text-align:center; padding:24px; color:var(--err); font-size:13px; }
 .row-empty   { text-align:center; padding:36px; color:var(--text-3); font-size:13px; }
 
-/* Footer */
-.tab-foot { padding:9px 14px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+/* ── Tab footer (pagination) ── */
+.tab-foot { padding:9px 14px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
 .tab-foot .upd { font-size:11.5px; color:var(--text-3); }
 .pager { display:flex; gap:6px; }
 
-/* Toast */
-#toast-bar { position:fixed; top:14px; right:14px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
-.toast { padding:10px 14px; border-radius:var(--r-sm); font-size:13px; max-width:300px; pointer-events:auto; animation:tin .18s ease; }
+/* ── Toast ── */
+#toast-bar { position:fixed; top:14px; right:14px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:300px; }
+.toast { padding:10px 14px; border-radius:var(--r-sm); font-size:13px; pointer-events:auto; animation:tin .18s ease; }
 @keyframes tin { from { transform:translateX(14px); opacity:0; } }
 .t-ok  { background:var(--ok-dim);  color:var(--ok);  border:1px solid rgba(34,197,94,.2); }
 .t-err { background:var(--err-dim); color:var(--err); border:1px solid rgba(239,68,68,.2); }
 
-/* Spinner */
+/* ── Spinner ── */
 .spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; display:inline-block; vertical-align:middle; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
-/* Currency */
+/* ── Currency ── */
 .currency { font-family:var(--mono); font-size:12.5px; }
 
-@media (max-width:600px) {
-  .api-key-wrap input { width:140px; }
-  .container { padding:16px; }
-  .header { flex-wrap:wrap; }
+/* ── Responsive: tablet ── */
+@media (max-width:900px) {
+  .api-key-wrap input { width:180px; }
+}
+
+/* ── Responsive: mobile ── */
+@media (max-width:640px) {
+  .header { flex-wrap:wrap; padding:10px 14px; gap:8px; }
+  .header-center { order:3; width:100%; justify-content:flex-start; }
+  .api-key-wrap { width:100%; }
+  .api-key-wrap input { flex:1; width:auto; min-width:0; }
+  .logo-name { display:none; }
+
+  .container { padding:14px; }
+  .kpi-grid { grid-template-columns:1fr 1fr; gap:8px; }
+  .kpi-val { font-size:22px; }
+
+  /* Tables scroll horizontally on small screens */
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .table-wrap table { min-width:480px; }
+
+  .tab-foot { justify-content:center; }
+
+  #toast-bar { right:8px; left:8px; max-width:none; }
+}
+
+@media (max-width:380px) {
+  .kpi-grid { grid-template-columns:1fr; }
+  .status-pill span { display:none; }
 }
 </style>
 </head>
@@ -194,17 +266,22 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
     <div class="logo-mark">A</div>
     <span class="logo-name">Anexar API</span>
   </div>
-  <div class="header-right">
+
+  <div class="header-center">
     <div class="api-key-wrap">
       <label for="api-key-input">API Key</label>
       <input type="password" id="api-key-input" placeholder="anexar_…" autocomplete="off">
       <button class="btn btn-primary" onclick="applyKey()">Carregar</button>
     </div>
+  </div>
+
+  <div class="header-right">
     <div class="status-pill">
       <div class="status-dot" id="status-dot"></div>
       <span id="status-text">—</span>
     </div>
-    <a id="docs-link" class="docs-btn" href="#" target="_blank" style="display:none">Documentação →</a>
+    <a id="docs-link" class="docs-btn" href="#" target="_blank" style="display:none">Docs →</a>
+    <button class="btn btn-ghost theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Alternar tema">☀</button>
   </div>
 </header>
 
@@ -226,10 +303,10 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 
   <!-- Tabs -->
   <div class="tabs-bar" role="tablist">
-    <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="panel-clientes"    onclick="switchTab('clientes',this)">Clientes</button>
-    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-produtos"    onclick="switchTab('produtos',this)">Produtos</button>
-    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-pedidos"     onclick="switchTab('pedidos',this)">Pedidos</button>
-    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-parcelas"    onclick="switchTab('parcelas',this)">Parcelas</button>
+    <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="panel-clientes"     onclick="switchTab('clientes',this)">Clientes</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-produtos"     onclick="switchTab('produtos',this)">Produtos</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-pedidos"      onclick="switchTab('pedidos',this)">Pedidos</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-parcelas"     onclick="switchTab('parcelas',this)">Parcelas</button>
     <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-fornecedores" onclick="switchTab('fornecedores',this)">Fornecedores</button>
   </div>
 
@@ -326,6 +403,28 @@ function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Theme ──────────────────────────────────────────────────────────────────
+function initTheme() {
+  let saved;
+  try { saved = localStorage.getItem('anexar_theme'); } catch {}
+  const theme = saved || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  _syncThemeBtn(theme);
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('anexar_theme', next); } catch {}
+  _syncThemeBtn(next);
+}
+
+function _syncThemeBtn(theme) {
+  const btn = document.getElementById('theme-btn');
+  if (btn) { btn.textContent = theme === 'dark' ? '☀' : '☾'; btn.title = theme === 'dark' ? 'Modo claro' : 'Modo escuro'; }
+}
+
 // ── Currency / date ────────────────────────────────────────────────────────
 const BRL = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
 function cur(v) { return v != null ? BRL.format(v) : '—'; }
@@ -347,9 +446,7 @@ function applyKey() {
   loadAll();
 }
 
-function headers() {
-  return { 'X-API-Key': apiKey };
-}
+function headers() { return { 'X-API-Key': apiKey }; }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
 function toast(msg, type = 'ok') {
@@ -367,14 +464,10 @@ async function checkHealth() {
   const text = document.getElementById('status-text');
   try {
     const r = await fetch(`${BASE}/health`);
-    if (r.ok) {
-      dot.className  = 'status-dot ok';
-      text.textContent = 'Conectado';
-    } else {
-      throw new Error();
-    }
+    if (r.ok) { dot.className = 'status-dot ok'; text.textContent = 'Conectado'; }
+    else throw new Error();
   } catch {
-    dot.className  = 'status-dot err';
+    dot.className = 'status-dot err';
     text.textContent = 'Desconectado';
   }
 }
@@ -396,7 +489,7 @@ function switchTab(name, btn) {
   if (apiKey) loadResource(name);
 }
 
-// ── Load all visible ───────────────────────────────────────────────────────
+// ── Load all ───────────────────────────────────────────────────────────────
 function loadAll() {
   ['clientes','produtos','pedidos','parcelas','fornecedores'].forEach(r => loadResource(r));
 }
@@ -410,42 +503,31 @@ async function loadResource(res) {
     const r = await fetch(`${BASE}/${res}?limit=${PAGE}&offset=${offset}`, { headers: headers() });
     if (!r.ok) {
       const body = await r.json().catch(() => ({}));
-      if (r.status === 401 || r.status === 403) {
-        renderForbidden(res, r.status);
-        return;
-      }
+      if (r.status === 401 || r.status === 403) { renderForbidden(res, r.status); return; }
       throw new Error(body.detail || `HTTP ${r.status}`);
     }
-    const data = await r.json();
-    renderData(res, data, offset);
-  } catch (e) {
-    renderError(res, e.message);
-  }
+    renderData(res, await r.json(), offset);
+  } catch (e) { renderError(res, e.message); }
 }
 
-function showNotice() {
-  document.getElementById('auth-notice').style.display = 'block';
-}
+function showNotice() { document.getElementById('auth-notice').style.display = 'block'; }
 
 function setLoading(res) {
-  const cols = colCount(res);
   document.getElementById('tbody-' + res).innerHTML =
-    `<tr><td colspan="${cols}" class="row-loading"><div class="spinner"></div></td></tr>`;
+    `<tr><td colspan="${colCount(res)}" class="row-loading"><div class="spinner"></div></td></tr>`;
 }
 
 function renderForbidden(res, status) {
-  const cols = colCount(res);
   const msg = status === 401 ? 'API Key inválida ou expirada' : 'Sem permissão para este recurso';
   document.getElementById('tbody-' + res).innerHTML =
-    `<tr><td colspan="${cols}" class="row-err">${esc(msg)}</td></tr>`;
+    `<tr><td colspan="${colCount(res)}" class="row-err">${esc(msg)}</td></tr>`;
   document.getElementById('prev-' + res).disabled = true;
   document.getElementById('next-' + res).disabled = true;
 }
 
 function renderError(res, msg) {
-  const cols = colCount(res);
   document.getElementById('tbody-' + res).innerHTML =
-    `<tr><td colspan="${cols}" class="row-err">Erro: ${esc(msg)}</td></tr>`;
+    `<tr><td colspan="${colCount(res)}" class="row-err">Erro: ${esc(msg)}</td></tr>`;
 }
 
 function colCount(res) {
@@ -461,17 +543,12 @@ function renderData(res, data, offset) {
   const tbody = document.getElementById('tbody-' + res);
 
   if (!data.length) {
-    const cols = colCount(res);
-    tbody.innerHTML = `<tr><td colspan="${cols}" class="row-empty">Nenhum registro encontrado</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${colCount(res)}" class="row-empty">Nenhum registro encontrado</td></tr>`;
     return;
   }
 
-  // Update KPI with count from this page
   const kpiEl = document.getElementById('kpi-' + res);
-  if (kpiEl) {
-    const total = data.length + offset;
-    kpiEl.textContent = total + (data.length === PAGE ? '+' : '');
-  }
+  if (kpiEl) kpiEl.textContent = (data.length + offset) + (data.length === PAGE ? '+' : '');
 
   const rows = document.createDocumentFragment();
 
@@ -539,6 +616,7 @@ function renderData(res, data, offset) {
 }
 
 // ── Boot ───────────────────────────────────────────────────────────────────
+initTheme();
 checkHealth();
 setInterval(checkHealth, 30000);
 
@@ -546,11 +624,9 @@ if (apiKey) {
   loadAll();
 } else {
   showNotice();
-  // Show empty state placeholders
   ['clientes','produtos','pedidos','parcelas','fornecedores'].forEach(res => {
-    const cols = colCount(res);
     document.getElementById('tbody-' + res).innerHTML =
-      `<tr><td colspan="${cols}" class="row-empty">Informe a API Key para carregar dados</td></tr>`;
+      `<tr><td colspan="${colCount(res)}" class="row-empty">Informe a API Key para carregar dados</td></tr>`;
   });
 }
 </script>
