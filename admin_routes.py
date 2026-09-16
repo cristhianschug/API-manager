@@ -89,6 +89,30 @@ async def logout():
         headers={"Set-Cookie": "admin_token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}
     )
 
+@router.post("/change-password")
+async def change_password(
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    username: str = Depends(require_admin_session)
+):
+    """Change admin password"""
+    from platform_db import get_db_connection
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Nova senha deve ter pelo menos 8 caracteres")
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT password_hash FROM admin_users WHERE username = ?", (username,))
+        row = cur.fetchone()
+        if not row or not verify_admin_password(current_password, row['password_hash']):
+            raise HTTPException(status_code=401, detail="Senha atual incorreta")
+        new_hash = pwd_context.hash(new_password)
+        cur.execute("UPDATE admin_users SET password_hash = ? WHERE username = ?", (new_hash, username))
+        conn.commit()
+        return {"message": "Senha alterada com sucesso"}
+    finally:
+        conn.close()
+
 # ============ CLIENTS ============
 
 @router.get("/clients")

@@ -365,6 +365,8 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
         <div class="nav-label" style="margin-top:6px">Sistema</div>
         <button class="nav-item"        data-view="metricas"  onclick="nav('metricas')"><span class="nav-icon">▦</span> Métricas</button>
         <button class="nav-item"        data-view="logs"      onclick="nav('logs')"><span class="nav-icon">≡</span> Logs</button>
+        <div class="nav-label" style="margin-top:6px">Conta</div>
+        <button class="nav-item"        data-view="config"    onclick="nav('config')"><span class="nav-icon">⚙</span> Configurações</button>
       </div>
       <div class="sb-foot">
         <span class="sb-user" id="sb-username"></span>
@@ -472,6 +474,20 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
             <thead><tr><th>Rota</th><th>Requisições</th></tr></thead>
             <tbody id="m-routes"></tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- View: Configurações -->
+      <section id="view-config" class="view">
+        <div class="view-head">
+          <div><div class="view-title">Configurações</div><div class="view-sub">Conta administrativa</div></div>
+        </div>
+        <div style="max-width:420px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:16px">Alterar senha</div>
+          <div class="field"><label>Senha atual</label><input type="password" id="cp-current" autocomplete="current-password"></div>
+          <div class="field"><label>Nova senha</label><input type="password" id="cp-new" autocomplete="new-password"></div>
+          <div class="field"><label>Confirmar nova senha</label><input type="password" id="cp-confirm" autocomplete="new-password"></div>
+          <button class="btn btn-primary" onclick="changePassword()">Salvar senha</button>
         </div>
       </section>
 
@@ -1082,6 +1098,26 @@ async function fetchLogs() {
     document.getElementById('log-prev').disabled = logsPage === 0;
     document.getElementById('log-next').disabled = (logsPage + 1) * LOGS_LIMIT >= data.total;
   } catch (e) { toast('Erro logs: ' + e.message, 'err'); }
+}
+
+// ── Change password ────────────────────────────────────────────────────────
+async function changePassword() {
+  const cur = document.getElementById('cp-current').value;
+  const nw  = document.getElementById('cp-new').value;
+  const cfm = document.getElementById('cp-confirm').value;
+  if (!cur || !nw || !cfm) { toast('Preencha todos os campos', 'err'); return; }
+  if (nw !== cfm)          { toast('As senhas não coincidem', 'err'); return; }
+  if (nw.length < 8)       { toast('Mínimo 8 caracteres', 'err'); return; }
+  const fd = new FormData();
+  fd.append('current_password', cur);
+  fd.append('new_password', nw);
+  try {
+    await api('/change-password', { method: 'POST', body: fd });
+    toast('Senha alterada com sucesso', 'ok');
+    document.getElementById('cp-current').value = '';
+    document.getElementById('cp-new').value = '';
+    document.getElementById('cp-confirm').value = '';
+  } catch (e) { toast(e.message, 'err'); }
 }
 
 // ── Keyboard ───────────────────────────────────────────────────────────────
