@@ -1,324 +1,129 @@
-"""Integration tests for API endpoints"""
-import pytest
-from datetime import datetime
-from sqlalchemy.orm import Session
-from models import Tbcliente, Tbproduto, Tbpedido, Tbparcelas, Tbfornecedor
+"""Tests for API Anexar v2.0 — multi-tenant endpoints"""
+from unittest.mock import patch
+from fastapi.testclient import TestClient
 
 
-class TestHealth:
-    """Health check endpoint tests"""
+# ── Health ───────────────────────────────────────────────────────────────────
 
-    def test_health_check(self, client):
-        """Test health endpoint"""
-        response = client.get("/api/v1/health")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["version"] == "1.0.0"
-        assert data["database"] == "firebird"
+def test_health(client):
+    r = client.get("/api/v1/health")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "2.0.0"
+    assert data["database"] == "firebird"
 
 
-class TestClientes:
-    """Cliente endpoint tests"""
+# ── Auth / scope guards ───────────────────────────────────────────────────────
 
-    def test_list_clientes_empty(self, client):
-        """Test list clientes when empty"""
-        response = client.get("/api/v1/clientes")
-        assert response.status_code == 200
-        assert response.json() == []
-
-    def test_list_clientes_with_data(self, client, db_session):
-        """Test list clientes with data"""
-        # Add test data
-        cliente = Tbcliente(
-            idcliente=1,
-            nomecliente="Cliente Teste",
-            email="teste@example.com",
-            cpfcnpj="12345678901234",
-            idtbempresa=1,
-            limitecredito=1000.0,
-            ativo=True
-        )
-        db_session.add(cliente)
-        db_session.commit()
-
-        response = client.get("/api/v1/clientes")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["nomecliente"] == "Cliente Teste"
-        assert data[0]["limitecredito"] == 1000.0
-
-    def test_list_clientes_with_filters(self, client, db_session):
-        """Test list with filters"""
-        cliente_ativo = Tbcliente(
-            idcliente=1,
-            nomecliente="Ativo",
-            idtbempresa=1,
-            ativo=True
-        )
-        cliente_inativo = Tbcliente(
-            idcliente=2,
-            nomecliente="Inativo",
-            idtbempresa=1,
-            ativo=False
-        )
-        db_session.add_all([cliente_ativo, cliente_inativo])
-        db_session.commit()
-
-        # Filter only active
-        response = client.get("/api/v1/clientes?ativo=true")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["nomecliente"] == "Ativo"
-
-        # Filter only inactive
-        response = client.get("/api/v1/clientes?ativo=false")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["nomecliente"] == "Inativo"
-
-    def test_get_cliente_by_id(self, client, db_session):
-        """Test get single cliente"""
-        cliente = Tbcliente(
-            idcliente=1,
-            nomecliente="Cliente Teste",
-            email="teste@example.com",
-            telefone="11999999999",
-            idtbempresa=1,
-            ativo=True
-        )
-        db_session.add(cliente)
-        db_session.commit()
-
-        response = client.get("/api/v1/clientes/1")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["nomecliente"] == "Cliente Teste"
-        # Email and phone should be masked
-        assert "..." in data["email"]
-        assert "****" in data["telefone"]
-
-    def test_get_cliente_not_found(self, client):
-        """Test get non-existent cliente"""
-        response = client.get("/api/v1/clientes/999")
-        assert response.status_code == 404
-
-    def test_email_masking(self, client, db_session):
-        """Test email masking in response"""
-        cliente = Tbcliente(
-            idcliente=1,
-            nomecliente="Test",
-            email="cristhian@example.com",
-            idtbempresa=1,
-            ativo=True
-        )
-        db_session.add(cliente)
-        db_session.commit()
-
-        response = client.get("/api/v1/clientes/1")
-        assert response.status_code == 200
-        data = response.json()
-        # Should be masked like "c...@example.com"
-        assert data["email"] == "c...@example.com"
+def test_missing_api_key_returns_422(client):
+    # Missing required header → FastAPI 422 before dependency is called
+    from main import app
+    from tenant_auth import get_tenant_context
+    saved = dict(app.dependency_overrides)
+    app.dependency_overrides.clear()
+    try:
+        r = TestClient(app, raise_server_exceptions=False).get("/api/v1/clientes")
+        assert r.status_code == 422
+    finally:
+        app.dependency_overrides.update(saved)
 
 
-class TestProdutos:
-    """Produto endpoint tests"""
-
-    def test_list_produtos_empty(self, client):
-        """Test list produtos when empty"""
-        response = client.get("/api/v1/produtos")
-        assert response.status_code == 200
-        assert response.json() == []
-
-    def test_list_produtos_with_data(self, client, db_session):
-        """Test list produtos with data"""
-        produto = Tbproduto(
-            idproduto=1,
-            codproduto="SKU-001",
-            nomeproduto="Produto Teste",
-            preco=99.90,
-            custounit=50.00,
-            idtbempresa=1,
-            ativo=True
-        )
-        db_session.add(produto)
-        db_session.commit()
-
-        response = client.get("/api/v1/produtos")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["codproduto"] == "SKU-001"
-        assert data[0]["preco"] == 99.90
-
-    def test_get_produto_by_id(self, client, db_session):
-        """Test get single produto"""
-        produto = Tbproduto(
-            idproduto=1,
-            codproduto="SKU-001",
-            nomeproduto="Produto Teste",
-            preco=99.90,
-            custounit=50.00,
-            idtbempresa=1,
-            ativo=True
-        )
-        db_session.add(produto)
-        db_session.commit()
-
-        response = client.get("/api/v1/produtos/1")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["nomeproduto"] == "Produto Teste"
-        assert data["custounit"] == 50.00  # Visible in detail view
+def test_no_scope_returns_403(client_no_scope):
+    r = client_no_scope.get("/api/v1/clientes")
+    assert r.status_code == 403
 
 
-class TestPedidos:
-    """Pedido endpoint tests"""
-
-    def test_list_pedidos_empty(self, client):
-        """Test list pedidos when empty"""
-        response = client.get("/api/v1/pedidos")
-        assert response.status_code == 200
-        assert response.json() == []
-
-    def test_list_pedidos_with_data(self, client, db_session):
-        """Test list pedidos with data"""
-        cliente = Tbcliente(
-            idcliente=1,
-            nomecliente="Cliente Teste",
-            idtbempresa=1,
-            ativo=True
-        )
-        pedido = Tbpedido(
-            idpedido=1,
-            numpedido="PED-001",
-            idcliente=1,
-            idtbempresa=1,
-            valortotal=5000.00,
-            status="CONFIRMADO"
-        )
-        db_session.add_all([cliente, pedido])
-        db_session.commit()
-
-        response = client.get("/api/v1/pedidos")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["numpedido"] == "PED-001"
-        assert data[0]["valortotal"] == 5000.00
-
-    def test_get_pedido_by_id(self, client, db_session):
-        """Test get single pedido"""
-        cliente = Tbcliente(
-            idcliente=1,
-            nomecliente="Cliente Teste",
-            idtbempresa=1,
-            ativo=True
-        )
-        pedido = Tbpedido(
-            idpedido=1,
-            numpedido="PED-001",
-            idcliente=1,
-            idtbempresa=1,
-            valortotal=5000.00,
-            status="CONFIRMADO"
-        )
-        db_session.add_all([cliente, pedido])
-        db_session.commit()
-
-        response = client.get("/api/v1/pedidos/1")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["numpedido"] == "PED-001"
+def test_read_only_cannot_post_cliente(client_read_only):
+    r = client_read_only.post("/api/v1/clientes", json={
+        "razao_social": "Test", "nome_fantasia": "Test",
+        "cpf_cnpj": "12345678000100", "email": "t@t.com",
+        "fone1": "11999990000", "endereco": "Rua A",
+        "numero": "1", "cep": "01310100", "bairro": "Centro",
+    })
+    assert r.status_code == 403
 
 
-class TestParcelas:
-    """Parcelas endpoint tests"""
+# ── Clientes ──────────────────────────────────────────────────────────────────
 
-    def test_list_parcelas_empty(self, client):
-        """Test list parcelas when empty"""
-        response = client.get("/api/v1/parcelas")
-        assert response.status_code == 200
-        assert response.json() == []
-
-    def test_list_parcelas_with_data(self, client, db_session):
-        """Test list parcelas with data"""
-        cliente = Tbcliente(
-            idcliente=1,
-            nomecliente="Cliente Teste",
-            idtbempresa=1,
-            ativo=True
-        )
-        pedido = Tbpedido(
-            idpedido=1,
-            numpedido="PED-001",
-            idcliente=1,
-            idtbempresa=1,
-            valortotal=5000.00,
-            status="CONFIRMADO"
-        )
-        parcela = Tbparcelas(
-            idparcela=1,
-            idpedido=1,
-            idtbempresa=1,
-            numero=1,
-            valor=1666.67,
-            status="ABERTA"
-        )
-        db_session.add_all([cliente, pedido, parcela])
-        db_session.commit()
-
-        response = client.get("/api/v1/parcelas")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["numero"] == 1
-        assert data[0]["valor"] == 1666.67
+def test_list_clientes_empty(client):
+    r = client.get("/api/v1/clientes")
+    assert r.status_code == 200
+    assert r.json() == []
 
 
-class TestFornecedores:
-    """Fornecedor endpoint tests"""
-
-    def test_list_fornecedores_empty(self, client):
-        """Test list fornecedores when empty"""
-        response = client.get("/api/v1/fornecedores")
-        assert response.status_code == 200
-        assert response.json() == []
-
-    def test_list_fornecedores_with_data(self, client, db_session):
-        """Test list fornecedores with data"""
-        fornecedor = Tbfornecedor(
-            idfornecedor=1,
-            nomefornecedor="Fornecedor Teste",
-            email="fornecedor@example.com",
-            idtbempresa=1,
-            ativo=True
-        )
-        db_session.add(fornecedor)
-        db_session.commit()
-
-        response = client.get("/api/v1/fornecedores")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["nomefornecedor"] == "Fornecedor Teste"
+def test_get_cliente_not_found(client):
+    r = client.get("/api/v1/clientes/99999")
+    assert r.status_code == 404
 
 
-class TestErrorHandling:
-    """Error handling tests"""
+# ── Produtos / Pedidos (smoke) ────────────────────────────────────────────────
 
-    def test_invalid_limit(self, client):
-        """Test invalid limit parameter"""
-        response = client.get("/api/v1/clientes?limit=99999")
-        # Should reject invalid limits
-        assert response.status_code in [200, 422]
+def test_list_produtos_empty(client):
+    r = client.get("/api/v1/produtos")
+    assert r.status_code == 200
+    assert r.json() == []
 
-    def test_invalid_offset(self, client):
-        """Test invalid offset parameter"""
-        response = client.get("/api/v1/clientes?offset=-1")
-        # Should reject negative offset
-        assert response.status_code in [200, 422]
+
+def test_list_pedidos_empty(client):
+    r = client.get("/api/v1/pedidos")
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+# ── Per-client OpenAPI spec ───────────────────────────────────────────────────
+
+def test_client_openapi_not_found():
+    from main import app
+    with patch("main.get_client_by_slug", return_value=None):
+        r = TestClient(app).get("/api/v1/openapi/nonexistent")
+    assert r.status_code == 404
+
+
+def test_client_openapi_inactive_returns_404():
+    from main import app
+    inactive = {"id": 1, "name": "X", "slug": "x", "status": "inactive"}
+    with patch("main.get_client_by_slug", return_value=inactive):
+        r = TestClient(app).get("/api/v1/openapi/x")
+    assert r.status_code == 404
+
+
+def test_client_openapi_filters_by_scope():
+    from main import app
+    fake_client = {"id": 1, "name": "Test Corp", "slug": "test", "status": "active"}
+    # Only clientes read, no write; no produtos
+    fake_scopes = {"clientes": {"read": True, "write": False}}
+    with patch("main.get_client_by_slug", return_value=fake_client), \
+         patch("main.get_client_all_scopes", return_value=fake_scopes):
+        r = TestClient(app).get("/api/v1/openapi/test")
+    assert r.status_code == 200
+    spec = r.json()
+    assert "Test Corp" in spec["info"]["title"]
+    paths = spec["paths"]
+    assert "/api/v1/health" in paths
+    # clientes list: GET allowed (read=True)
+    assert "get" in paths.get("/api/v1/clientes", {})
+    # clientes POST must be absent (write=False)
+    assert "post" not in paths.get("/api/v1/clientes", {})
+    # produtos must be absent entirely (not in scopes)
+    assert "/api/v1/produtos" not in paths
+
+
+# ── Per-client ReDoc page ─────────────────────────────────────────────────────
+
+def test_client_docs_not_found():
+    from main import app
+    with patch("main.get_client_by_slug", return_value=None):
+        r = TestClient(app).get("/docs/nonexistent")
+    assert r.status_code == 404
+
+
+def test_client_docs_returns_html():
+    from main import app
+    fake_client = {"id": 1, "name": "Test Corp", "slug": "test", "status": "active"}
+    with patch("main.get_client_by_slug", return_value=fake_client):
+        r = TestClient(app).get("/docs/test")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "redoc" in r.text.lower()
+    assert "test" in r.text  # spec-url contains the slug
