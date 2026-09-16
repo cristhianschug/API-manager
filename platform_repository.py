@@ -9,21 +9,27 @@ import os
 
 from platform_db import get_db_connection
 
-ENCRYPTION_KEY = os.getenv('PLATFORM_ENCRYPTION_KEY')
-if not ENCRYPTION_KEY:
-    raise ValueError("PLATFORM_ENCRYPTION_KEY env var not set — required for credential encryption")
+_cipher = None
 
-cipher = Fernet(ENCRYPTION_KEY.encode() if isinstance(ENCRYPTION_KEY, str) else ENCRYPTION_KEY)
+def _get_cipher():
+    """Lazy-load cipher only when needed"""
+    global _cipher
+    if _cipher is None:
+        key = os.getenv('PLATFORM_ENCRYPTION_KEY')
+        if not key:
+            raise ValueError("PLATFORM_ENCRYPTION_KEY env var not set — required for credential encryption")
+        _cipher = Fernet(key.encode() if isinstance(key, str) else key)
+    return _cipher
 
 # ============ ENCRYPTION / DECRYPTION ============
 
 def encrypt_password(password: str) -> str:
     """Encrypt a password for storage"""
-    return cipher.encrypt(password.encode()).decode()
+    return _get_cipher().encrypt(password.encode()).decode()
 
 def decrypt_password(encrypted: str) -> str:
     """Decrypt a stored password"""
-    return cipher.decrypt(encrypted.encode()).decode()
+    return _get_cipher().decrypt(encrypted.encode()).decode()
 
 # ============ CLIENTS ============
 

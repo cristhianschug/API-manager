@@ -53,20 +53,26 @@ app.add_middleware(
 # Add request logging middleware
 app.add_middleware(RequestLoggingMiddleware)
 
-# Include admin routes
-app.include_router(admin_router)
-
-# ============ DASHBOARD ============
+# ============ STATIC PAGES (BEFORE ROUTER) ============
 
 @app.get("/", include_in_schema=False)
 async def serve_dashboard():
     """Serve dashboard at root"""
-    from pathlib import Path
     dashboard_path = Path(__file__).parent / "dashboard.html"
     if dashboard_path.exists():
-        from fastapi.responses import FileResponse
         return FileResponse(dashboard_path, media_type="text/html")
     return {"message": "Dashboard not found"}
+
+@app.get("/admin", include_in_schema=False)
+async def serve_admin_panel():
+    """Serve admin dashboard at /admin"""
+    admin_path = Path(__file__).parent / "admin_dashboard.html"
+    if admin_path.exists():
+        return FileResponse(admin_path, media_type="text/html")
+    return {"message": "Admin dashboard not found"}
+
+# Include admin routes (API endpoints, not static pages)
+app.include_router(admin_router)
 
 # ============ HEALTH CHECK ============
 
@@ -310,16 +316,6 @@ async def create_fornecedor(
     except Exception as e:
         context.conn.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-
-# ============ ADMIN PANEL ============
-
-@app.get("/admin", include_in_schema=False)
-async def serve_admin_panel():
-    """Serve admin dashboard at /admin"""
-    admin_path = Path(__file__).parent / "admin_dashboard.html"
-    if admin_path.exists():
-        return FileResponse(admin_path, media_type="text/html")
-    return {"message": "Admin dashboard not found"}
 
 # Error handlers
 @app.exception_handler(HTTPException)
