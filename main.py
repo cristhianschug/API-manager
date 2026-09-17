@@ -46,6 +46,7 @@ from platform_repository import get_client_by_slug, get_client_all_scopes, get_r
 from request_logging import RequestLoggingMiddleware
 from admin_routes import router as admin_router
 from ai_routes import router as ai_router
+from mcp_routes import router as mcp_router
 from platform_db import init_platform_db
 
 # Initialize platform database on startup
@@ -95,6 +96,9 @@ app.include_router(admin_router)
 
 # Include AI routes
 app.include_router(ai_router)
+
+# Include MCP server (SSE at /mcp/sse)
+app.include_router(mcp_router)
 
 # resource slug → path prefix (used to filter OpenAPI spec per client)
 _RESOURCE_PATH = {

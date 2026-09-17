@@ -42,7 +42,11 @@ def generate_description(subject: str, context: str = "", max_tokens: int = 300)
     return query_ai(prompt, max_tokens=max_tokens + 500)
 
 
-def analyze_data(data_description: str, query: str, max_tokens: int = 400) -> str:
-    """Analyze data patterns using OmniRoute."""
-    prompt = f"Analise os dados abaixo e responda em Portugues do Brasil:\n\nDados: {data_description}\n\nPergunta: {query}"
+def analyze_data(data_description: str, query: str, max_tokens: int = 400,
+                 schema_context: str = "") -> str:
+    """Analyze data patterns using OmniRoute. schema_context prepended when available."""
+    prompt = ""
+    if schema_context:
+        prompt += f"Contexto do banco de dados:\n{schema_context}\n\n"
+    prompt += f"Analise os dados abaixo e responda em Portugues do Brasil:\n\nDados: {data_description}\n\nPergunta: {query}"
     return query_ai(prompt, max_tokens=max_tokens + 500)

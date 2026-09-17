@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from tenant_auth import get_tenant_context, TenantContext
 from omniroute_client import summarize_text, generate_description, analyze_data
+from platform_repository import get_schema_snapshot
+import asyncio
 import json
 
 router = APIRouter(prefix="/api/v1/ai", tags=["AI"])
@@ -84,14 +86,24 @@ async def analyze_endpoint(
     request: DataAnalysisRequest,
     context: TenantContext = Depends(get_tenant_context)
 ):
-    """Analyze data using OmniRoute AI."""
+    """Analyze data using OmniRoute AI with tenant Firebird schema as context."""
     try:
+        # Inject schema snapshot as context when available
+        schema_ctx = ""
+        snap = await asyncio.to_thread(get_schema_snapshot, context.client_id)
+        if snap:
+            tables = [t['name'] for t in snap.get('tables', [])]
+            procs  = [p['name'] for p in snap.get('procedures', [])]
+            trigs  = [t['name'] for t in snap.get('triggers', [])]
+            schema_ctx = (
+                f"Tabelas Firebird ({len(tables)}): {', '.join(tables)}\n"
+                f"Procedures ({len(procs)}): {', '.join(procs)}\n"
+                f"Triggers ({len(trigs)}): {', '.join(trigs)}"
+            )
+
         data_str = json.dumps(request.data) if isinstance(request.data, dict) else str(request.data)
-        analysis = analyze_data(data_str, request.query, request.max_tokens)
-        return DataAnalysisResponse(
-            query=request.query,
-            analysis=analysis
-        )
+        analysis = analyze_data(data_str, request.query, request.max_tokens, schema_context=schema_ctx)
+        return DataAnalysisResponse(query=request.query, analysis=analysis)
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
