@@ -224,22 +224,23 @@ def hash_api_key(key: str) -> str:
     """Hash an API key for storage"""
     return hashlib.sha256(key.encode()).hexdigest()
 
-def create_api_key(client_id: int, name: str, scopes: Dict[str, Dict[str, bool]]) -> Dict[str, Any]:
+def create_api_key(client_id: int, name: str, scopes: Dict[str, Dict[str, bool]],
+                   expires_in_days: Optional[int] = None) -> Dict[str, Any]:
     """Create a new API key with scopes. Returns the full key (shown only once)."""
     full_key, prefix = generate_api_key()
     key_hash = hash_api_key(full_key)
+    expires_at = (datetime.utcnow() + timedelta(days=expires_in_days)).isoformat() if expires_in_days else None
 
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute(
-            """INSERT INTO api_keys (client_id, name, key_prefix, key_hash, status)
-               VALUES (?, ?, ?, ?, 'active')""",
-            (client_id, name, prefix, key_hash)
+            """INSERT INTO api_keys (client_id, name, key_prefix, key_hash, status, expires_at)
+               VALUES (?, ?, ?, ?, 'active', ?)""",
+            (client_id, name, prefix, key_hash, expires_at)
         )
         api_key_id = cur.lastrowid
 
-        # Insert scopes: scopes dict format: {'clientes': {'read': True, 'write': False}, ...}
         for resource, perms in scopes.items():
             cur.execute(
                 """INSERT INTO api_key_scopes (api_key_id, resource, can_read, can_write)
@@ -249,7 +250,6 @@ def create_api_key(client_id: int, name: str, scopes: Dict[str, Dict[str, bool]]
 
         conn.commit()
 
-        # Return key info with the full key visible (only this once)
         return {
             'id': api_key_id,
             'client_id': client_id,
@@ -258,6 +258,7 @@ def create_api_key(client_id: int, name: str, scopes: Dict[str, Dict[str, bool]]
             'prefix': prefix,
             'status': 'active',
             'created_at': datetime.utcnow().isoformat(),
+            'expires_at': expires_at,
             'scopes': scopes,
         }
     finally:
@@ -269,7 +270,7 @@ def get_api_key_by_hash(key_hash: str) -> Optional[Dict[str, Any]]:
     cur = conn.cursor()
     try:
         cur.execute(
-            """SELECT id, client_id, name, key_prefix, status, created_at, revoked_at, last_used_at
+            """SELECT id, client_id, name, key_prefix, status, created_at, revoked_at, last_used_at, expires_at
                FROM api_keys WHERE key_hash = ?""",
             (key_hash,)
         )
@@ -277,7 +278,10 @@ def get_api_key_by_hash(key_hash: str) -> Optional[Dict[str, Any]]:
         if not row:
             return None
 
-        # Load scopes
+        # Treat expired keys as revoked
+        if row['expires_at'] and row['expires_at'] < datetime.utcnow().isoformat():
+            return None
+
         cur.execute(
             """SELECT resource, can_read, can_write FROM api_key_scopes WHERE api_key_id = ?""",
             (row['id'],)
@@ -298,6 +302,7 @@ def get_api_key_by_hash(key_hash: str) -> Optional[Dict[str, Any]]:
             'created_at': row['created_at'],
             'revoked_at': row['revoked_at'],
             'last_used_at': row['last_used_at'],
+            'expires_at': row['expires_at'],
             'scopes': scopes,
         }
     finally:
@@ -309,7 +314,7 @@ def list_api_keys(client_id: int) -> List[Dict[str, Any]]:
     cur = conn.cursor()
     try:
         cur.execute(
-            """SELECT id, client_id, name, key_prefix, status, created_at, revoked_at, last_used_at
+            """SELECT id, client_id, name, key_prefix, status, created_at, revoked_at, last_used_at, expires_at
                FROM api_keys WHERE client_id = ? ORDER BY created_at DESC""",
             (client_id,)
         )
@@ -335,6 +340,7 @@ def list_api_keys(client_id: int) -> List[Dict[str, Any]]:
                 'created_at': row['created_at'],
                 'revoked_at': row['revoked_at'],
                 'last_used_at': row['last_used_at'],
+                'expires_at': row['expires_at'] if 'expires_at' in row.keys() else None,
                 'scopes': scopes,
             })
         return keys
@@ -476,6 +482,65 @@ def get_request_logs_total_count(client_id: Optional[int] = None, hours: int = 2
 
         cur.execute(query, params)
         return cur.fetchone()['cnt']
+    finally:
+        conn.close()
+
+# ============ AUDIT LOGS ============
+
+def log_admin_action(admin_user: str, action: str, target_type: str,
+                     target_id: Optional[int] = None, detail: Optional[str] = None):
+    """Record an admin action (best-effort)."""
+    try:
+        conn = get_db_connection()
+        conn.execute(
+            "INSERT INTO audit_logs (admin_user, action, target_type, target_id, detail) VALUES (?,?,?,?,?)",
+            (admin_user, action, target_type, target_id, detail)
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+def get_audit_logs(limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT COUNT(*) as cnt FROM audit_logs")
+        total = cur.fetchone()['cnt']
+        cur.execute(
+            "SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset)
+        )
+        return {"logs": [dict(r) for r in cur.fetchall()], "total": total}
+    finally:
+        conn.close()
+
+# ============ SCHEMA SNAPSHOTS ============
+
+def save_schema_snapshot(client_id: int, schema: dict) -> None:
+    import json
+    conn = get_db_connection()
+    conn.execute(
+        """INSERT INTO schema_snapshots (client_id, schema_json, captured_at)
+           VALUES (?, ?, ?)
+           ON CONFLICT(client_id) DO UPDATE SET schema_json=excluded.schema_json, captured_at=excluded.captured_at""",
+        (client_id, json.dumps(schema), datetime.utcnow().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+def get_schema_snapshot(client_id: int) -> Optional[dict]:
+    import json
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT schema_json, captured_at FROM schema_snapshots WHERE client_id = ?", (client_id,))
+        row = cur.fetchone()
+        if not row:
+            return None
+        data = json.loads(row['schema_json'])
+        data['captured_at'] = row['captured_at']
+        return data
     finally:
         conn.close()
 

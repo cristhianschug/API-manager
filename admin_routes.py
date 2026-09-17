@@ -14,6 +14,8 @@ from platform_repository import (
     create_api_key, list_api_keys, revoke_api_key, rotate_api_key,
     get_request_logs, get_request_logs_total_count, get_request_metrics,
     list_admin_users, create_admin_user, delete_admin_user,
+    log_admin_action, get_audit_logs,
+    get_client_credentials_for_connection, save_schema_snapshot, get_schema_snapshot,
 )
 from ini_parser import parse_confrede_ini
 
@@ -87,6 +89,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
         _login_failures.pop(ip, None)
+        log_admin_action(username, 'login', 'admin_user')
         token = create_admin_token(username)
         secure = "Secure; " if request.url.scheme == "https" else ""
         return JSONResponse(
@@ -125,6 +128,7 @@ async def change_password(
         new_hash = pwd_context.hash(new_password)
         cur.execute("UPDATE admin_users SET password_hash = ? WHERE username = ?", (new_hash, username))
         conn.commit()
+        log_admin_action(username, 'change_password', 'admin_user')
         return {"message": "Senha alterada com sucesso"}
     finally:
         conn.close()
@@ -178,7 +182,7 @@ async def create_client_route(
     name: str = Form(...),
     slug: str = Form(...),
     confrede_file: UploadFile = File(...),
-    _: str = Depends(require_admin_session)
+    admin: str = Depends(require_admin_session)
 ):
     """Create new client with confrede.ini upload"""
     try:
@@ -216,9 +220,8 @@ async def create_client_route(
             db_password=config['password'],
         )
 
-        # Mark connection as tested and OK
         update_client_credentials_test_status(client['id'], True)
-
+        log_admin_action(admin, 'create_client', 'client', client['id'], f"slug={slug}")
         return client
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -240,7 +243,8 @@ async def create_api_key_route(
     client_id: int,
     name: str = Form(...),
     scopes_json: str = Form(...),
-    _: str = Depends(require_admin_session)
+    expires_in_days: Optional[int] = Form(None),
+    admin: str = Depends(require_admin_session)
 ):
     """Generate new API key for a client with scopes"""
     client = get_client(client_id)
@@ -248,20 +252,28 @@ async def create_api_key_route(
         raise HTTPException(status_code=404, detail="Client not found")
 
     try:
-        scopes = json.loads(scopes_json)
-        # Validate scopes format
+        raw_scopes = json.loads(scopes_json)
         valid_resources = {'clientes', 'produtos', 'pedidos', 'parcelas', 'fornecedores'}
-        for resource in scopes:
-            if resource not in valid_resources:
-                raise ValueError(f"Invalid resource: {resource}")
-            if 'read' not in scopes[resource] or 'write' not in scopes[resource]:
-                raise ValueError(f"Scope for {resource} must have 'read' and 'write' booleans")
+        # Accept list [{resource, can_read, can_write}] or dict {resource: {read, write}}
+        if isinstance(raw_scopes, list):
+            scopes = {}
+            for item in raw_scopes:
+                r = item.get('resource')
+                if r not in valid_resources:
+                    raise ValueError(f"Invalid resource: {r}")
+                scopes[r] = {'read': bool(item.get('can_read', True)), 'write': bool(item.get('can_write', False))}
+        else:
+            scopes = raw_scopes
+            for resource in scopes:
+                if resource not in valid_resources:
+                    raise ValueError(f"Invalid resource: {resource}")
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON in scopes")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    key_info = create_api_key(client_id, name, scopes)
+    key_info = create_api_key(client_id, name, scopes, expires_in_days=expires_in_days)
+    log_admin_action(admin, 'create_key', 'api_key', key_info['id'], f"client={client_id} name={name}")
     return key_info
 
 @router.get("/clients/{client_id}/keys")
@@ -273,16 +285,99 @@ async def list_client_keys_route(client_id: int, _: str = Depends(require_admin_
     return list_api_keys(client_id)
 
 @router.post("/keys/{api_key_id}/revoke")
-async def revoke_key_route(api_key_id: int, _: str = Depends(require_admin_session)):
+async def revoke_key_route(api_key_id: int, admin: str = Depends(require_admin_session)):
     """Revoke an API key"""
     revoke_api_key(api_key_id)
+    log_admin_action(admin, 'revoke_key', 'api_key', api_key_id)
     return {"message": "API key revoked"}
 
 @router.post("/keys/{api_key_id}/rotate")
-async def rotate_key_route(api_key_id: int, _: str = Depends(require_admin_session)):
+async def rotate_key_route(api_key_id: int, admin: str = Depends(require_admin_session)):
     """Rotate an API key (revoke old, generate new with same name/scopes)"""
     new_key_info = rotate_api_key(api_key_id)
+    log_admin_action(admin, 'rotate_key', 'api_key', api_key_id)
     return new_key_info
+
+# ============ AUDIT LOGS ============
+
+@router.get("/audit-logs")
+async def get_audit_logs_route(
+    limit: int = 50,
+    offset: int = 0,
+    _: str = Depends(require_admin_session)
+):
+    return get_audit_logs(limit=limit, offset=offset)
+
+# ============ SCHEMA CATALOG ============
+
+@router.post("/clients/{client_id}/schema/capture")
+async def capture_schema(client_id: int, admin: str = Depends(require_admin_session)):
+    """Introspect client's Firebird DB and store a schema snapshot."""
+    import asyncio
+    creds = get_client_credentials_for_connection(client_id)
+    if not creds:
+        raise HTTPException(status_code=404, detail="Client credentials not found")
+
+    def _introspect():
+        conn = firebirdsql.connect(**creds)
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT TRIM(r.RDB$RELATION_NAME) as name,
+                       TRIM(r.RDB$RELATION_TYPE) as rel_type
+                FROM RDB$RELATIONS r
+                WHERE r.RDB$SYSTEM_FLAG = 0
+                ORDER BY r.RDB$RELATION_NAME
+            """)
+            tables = [{"name": row[0], "type": "view" if row[1] == 1 else "table"} for row in cur.fetchall()]
+
+            cur.execute("""
+                SELECT TRIM(RDB$PROCEDURE_NAME) as name
+                FROM RDB$PROCEDURES
+                WHERE RDB$SYSTEM_FLAG = 0
+                ORDER BY RDB$PROCEDURE_NAME
+            """)
+            procedures = [row[0] for row in cur.fetchall()]
+
+            cur.execute("""
+                SELECT TRIM(RDB$TRIGGER_NAME) as name,
+                       TRIM(RDB$RELATION_NAME) as table_name
+                FROM RDB$TRIGGERS
+                WHERE RDB$SYSTEM_FLAG = 0
+                ORDER BY RDB$RELATION_NAME, RDB$TRIGGER_NAME
+            """)
+            triggers = [{"name": row[0], "table": row[1]} for row in cur.fetchall()]
+
+            return {"tables": tables, "procedures": procedures, "triggers": triggers}
+        finally:
+            conn.close()
+
+    try:
+        schema = await asyncio.to_thread(_introspect)
+        save_schema_snapshot(client_id, schema)
+        log_admin_action(admin, 'capture_schema', 'client', client_id)
+        return {
+            "message": "Schema capturado com sucesso",
+            "tables": len(schema["tables"]),
+            "procedures": len(schema["procedures"]),
+            "triggers": len(schema["triggers"]),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro ao conectar ao Firebird: {e}")
+
+@router.get("/clients/{client_id}/schema")
+async def get_schema(client_id: int, _: str = Depends(require_admin_session)):
+    snap = get_schema_snapshot(client_id)
+    if not snap:
+        raise HTTPException(status_code=404, detail="Nenhum snapshot capturado. Use POST /schema/capture primeiro.")
+    return snap
+
+@router.get("/clients/{client_id}/schema/tables")
+async def get_schema_tables(client_id: int, _: str = Depends(require_admin_session)):
+    snap = get_schema_snapshot(client_id)
+    if not snap:
+        raise HTTPException(status_code=404, detail="Nenhum snapshot. Use /schema/capture primeiro.")
+    return {"tables": snap.get("tables", []), "captured_at": snap.get("captured_at")}
 
 # ============ METRICS & LOGS ============
 

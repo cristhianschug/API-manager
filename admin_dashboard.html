@@ -413,6 +413,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
         <div class="nav-label" style="margin-top:6px">Sistema</div>
         <button class="nav-item"        data-view="metricas"  onclick="nav('metricas')"><span class="nav-icon">▦</span> Métricas</button>
         <button class="nav-item"        data-view="logs"      onclick="nav('logs')"><span class="nav-icon">≡</span> Logs</button>
+        <button class="nav-item"        data-view="auditoria" onclick="nav('auditoria')"><span class="nav-icon">◉</span> Auditoria</button>
         <div class="nav-label" style="margin-top:6px">Conta</div>
         <button class="nav-item"        data-view="config"    onclick="nav('config')"><span class="nav-icon">⚙</span> Configurações</button>
       </div>
@@ -512,6 +513,15 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
             <div style="font-size:13px;font-weight:600;margin-bottom:12px">Gerar nova API Key</div>
             <div class="form-row" style="align-items:flex-end">
               <div class="field"><label>Nome da key</label><input type="text" id="key-name" placeholder="Ex: Integração ERP"></div>
+              <div class="field">
+                <label>Expiração</label>
+                <select id="key-expires">
+                  <option value="">Nunca expira</option>
+                  <option value="90">90 dias</option>
+                  <option value="180">180 dias</option>
+                  <option value="365">1 ano</option>
+                </select>
+              </div>
               <div style="padding-top:4px">
                 <button class="btn btn-primary" onclick="createKey()">Gerar</button>
               </div>
@@ -530,14 +540,50 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
           <hr>
 
           <!-- Keys list -->
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">API Keys</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div style="font-size:13px;font-weight:600">API Keys</div>
+            <button class="btn btn-ghost btn-sm" onclick="captureSchema()" id="btn-capture-schema">⟳ Capturar catálogo</button>
+          </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Nome</th><th>Prefixo</th><th>Scopes</th><th>Status</th><th>Último uso</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Nome</th><th>Prefixo</th><th>Scopes</th><th>Status</th><th>Expira em</th><th>Último uso</th><th>Ações</th></tr></thead>
               <tbody id="keys-body">
-                <tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>
+                <tr><td colspan="7" class="empty-state"><div class="spinner"></div></td></tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Schema catalog (shown after capture) -->
+          <div id="schema-panel" style="display:none;margin-top:18px">
+            <hr>
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px">Catálogo Firebird <span id="schema-captured-at" style="font-size:11px;color:var(--text-3);font-weight:400"></span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,auto);gap:16px;margin-bottom:10px">
+              <span style="font-size:12px;color:var(--text-3)">Tabelas: <strong id="schema-n-tables">—</strong></span>
+              <span style="font-size:12px;color:var(--text-3)">Procedures: <strong id="schema-n-procs">—</strong></span>
+              <span style="font-size:12px;color:var(--text-3)">Triggers: <strong id="schema-n-trigs">—</strong></span>
+            </div>
+            <div class="table-wrap" style="max-height:220px;overflow-y:auto">
+              <table><thead><tr><th>Tabela/View</th><th>Tipo</th></tr></thead>
+              <tbody id="schema-tables-body"></tbody></table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View: Auditoria -->
+      <section id="view-auditoria" class="view">
+        <div class="view-head">
+          <div><div class="view-title">Auditoria</div><div class="view-sub">Ações realizadas pelos administradores</div></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Admin</th><th>Ação</th><th>Tipo</th><th>ID</th><th>Detalhe</th></tr></thead>
+            <tbody id="audit-body"><tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr></tbody>
+          </table>
+          <div class="pager">
+            <button class="btn btn-ghost btn-sm" id="aud-prev" onclick="auditPage--;loadAudit()" disabled>← Anterior</button>
+            <span id="aud-info" style="font-size:12px;color:var(--text-3)"></span>
+            <button class="btn btn-ghost btn-sm" id="aud-next" onclick="auditPage++;loadAudit()" disabled>Próximo →</button>
           </div>
         </div>
       </section>
@@ -839,7 +885,7 @@ function showApp(show) {
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────
-const VIEW_LABELS = { overview:'Overview', clientes:'Clientes', metricas:'Métricas', logs:'Logs', config:'Configurações' };
+const VIEW_LABELS = { overview:'Overview', clientes:'Clientes', metricas:'Métricas', logs:'Logs', auditoria:'Auditoria', config:'Configurações' };
 function nav(view) {
   closeSidebar();
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -850,6 +896,7 @@ function nav(view) {
   document.getElementById('topbar-search').value = '';
   if (view === 'metricas') loadMetrics();
   if (view === 'logs') { initLogFilters(); fetchLogs(); }
+  if (view === 'auditoria') loadAudit();
   if (view === 'config') loadAdmins();
 }
 
@@ -909,6 +956,72 @@ async function loadOverview() {
       });
     }
   } catch (e) { toast('Erro ao carregar overview: ' + e.message, 'err'); }
+}
+
+// ── Audit logs ─────────────────────────────────────────────────────────────
+let auditPage = 0;
+const AUDIT_LIMIT = 50;
+
+async function loadAudit() {
+  const tbody = document.getElementById('audit-body');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px"><div class="spinner"></div></td></tr>';
+  try {
+    const data = await api(`/audit-logs?limit=${AUDIT_LIMIT}&offset=${auditPage * AUDIT_LIMIT}`);
+    tbody.innerHTML = '';
+    if (!data.logs.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma ação registrada ainda</td></tr>';
+      return;
+    }
+    data.logs.forEach(l => {
+      const tr = tbody.insertRow();
+      tr.insertCell().textContent = fmt(l.created_at);
+      tr.insertCell().textContent = l.admin_user;
+      tr.insertCell().innerHTML = `<code style="font-size:11.5px">${esc(l.action)}</code>`;
+      tr.insertCell().textContent = l.target_type;
+      tr.insertCell().textContent = l.target_id ?? '—';
+      tr.insertCell().innerHTML = `<span style="font-size:11.5px;color:var(--text-3)">${esc(l.detail || '—')}</span>`;
+    });
+    const total = data.total;
+    const totalPages = Math.ceil(total / AUDIT_LIMIT);
+    document.getElementById('aud-info').textContent = totalPages > 1
+      ? `Página ${auditPage + 1} de ${totalPages} (${total} registros)`
+      : `${total} registro${total !== 1 ? 's' : ''}`;
+    document.getElementById('aud-prev').disabled = auditPage === 0;
+    document.getElementById('aud-next').disabled = (auditPage + 1) * AUDIT_LIMIT >= total;
+  } catch (e) { toast('Erro ao carregar auditoria: ' + e.message, 'err'); }
+}
+
+// ── Schema catalog ─────────────────────────────────────────────────────────
+async function captureSchema() {
+  if (!currentClientId) return;
+  const btn = document.getElementById('btn-capture-schema');
+  btn.disabled = true; btn.textContent = '⟳ Capturando…';
+  try {
+    const res = await api(`/clients/${currentClientId}/schema/capture`, { method: 'POST' });
+    toast(`Catálogo capturado: ${res.tables} tabelas, ${res.procedures} procedures`, 'ok');
+    await loadSchema();
+  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = '⟳ Capturar catálogo'; }
+}
+
+async function loadSchema() {
+  try {
+    const snap = await api(`/clients/${currentClientId}/schema`);
+    const panel = document.getElementById('schema-panel');
+    panel.style.display = 'block';
+    document.getElementById('schema-captured-at').textContent = snap.captured_at ? `— capturado em ${fmt(snap.captured_at)}` : '';
+    document.getElementById('schema-n-tables').textContent = (snap.tables || []).length;
+    document.getElementById('schema-n-procs').textContent = (snap.procedures || []).length;
+    document.getElementById('schema-n-trigs').textContent = (snap.triggers || []).length;
+    const tbody = document.getElementById('schema-tables-body');
+    tbody.innerHTML = '';
+    (snap.tables || []).forEach(t => {
+      const tr = tbody.insertRow();
+      tr.insertCell().textContent = t.name;
+      tr.insertCell().innerHTML = `<span class="badge ${t.type === 'view' ? 'b-warn' : 'b-ok'}">${t.type}</span>`;
+    });
+    if (!tbody.rows.length) tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Sem tabelas</td></tr>';
+  } catch { /* snapshot não existe ainda — painel fica oculto */ }
 }
 
 // ── Global search ──────────────────────────────────────────────────────────
@@ -997,6 +1110,7 @@ async function openPanel(clientId) {
     });
     buildNewKeyPerms();
     await loadKeys(clientId);
+    await loadSchema();
   } catch (e) { toast('Erro ao carregar cliente: ' + e.message, 'err'); }
 }
 
@@ -1008,15 +1122,17 @@ function closePanel() {
 // ── Keys ───────────────────────────────────────────────────────────────────
 async function loadKeys(clientId) {
   const tbody = document.getElementById('keys-body');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px"><div class="spinner"></div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px"><div class="spinner"></div></td></tr>';
   try {
     const keys = await api(`/clients/${clientId}/keys`);
     tbody.innerHTML = '';
     if (!keys.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma key — gere a primeira acima</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma key — gere a primeira acima</td></tr>';
       return;
     }
+    const now = Date.now();
     keys.forEach(k => {
+      const expired = k.expires_at && new Date(k.expires_at).getTime() < now;
       const tr = tbody.insertRow();
       tr.insertCell().textContent = k.name;
       const tdP = tr.insertCell(); tdP.innerHTML = `<code>${esc(k.prefix)}…</code>`;
@@ -1024,7 +1140,17 @@ async function loadKeys(clientId) {
         .filter(([, p]) => p.read || p.write)
         .map(([r, p]) => r + (p.write ? ' rw' : ' r')).join(', ');
       const tdS = tr.insertCell(); tdS.innerHTML = `<span style="font-size:11.5px;color:var(--text-2)">${esc(scopeList || '—')}</span>`;
-      const tdSt = tr.insertCell(); tdSt.innerHTML = `<span class="badge ${k.status === 'active' ? 'b-ok' : 'b-err'}">${esc(k.status)}</span>`;
+      const tdSt = tr.insertCell(); tdSt.innerHTML = `<span class="badge ${k.status === 'active' && !expired ? 'b-ok' : 'b-err'}">${expired ? 'expirada' : esc(k.status)}</span>`;
+      const tdExp = tr.insertCell();
+      if (k.expires_at) {
+        const d = new Date(k.expires_at);
+        const daysLeft = Math.ceil((d - now) / 86400000);
+        tdExp.innerHTML = daysLeft > 0
+          ? `<span style="font-size:11.5px;color:${daysLeft < 30 ? 'var(--warn)' : 'var(--text-2)'}">${fmtDate(k.expires_at)} (${daysLeft}d)</span>`
+          : `<span style="font-size:11.5px;color:var(--err)">${fmtDate(k.expires_at)}</span>`;
+      } else {
+        tdExp.innerHTML = '<span style="font-size:11.5px;color:var(--text-3)">Nunca</span>';
+      }
       tr.insertCell().textContent = k.last_used_at ? fmt(k.last_used_at) : '—';
       const tdA = tr.insertCell(); tdA.className = 'row-actions';
       if (k.status === 'active') {
@@ -1066,14 +1192,17 @@ async function createKey() {
       write: document.getElementById(`nkp-${r}-write`)?.checked ?? false,
     };
   });
+  const expiresIn = document.getElementById('key-expires').value;
   const fd = new FormData();
   fd.append('name', name);
   fd.append('scopes_json', JSON.stringify(scopes));
+  if (expiresIn) fd.append('expires_in_days', expiresIn);
   try {
     const res = await fetch(`${API}/clients/${currentClientId}/keys`, { method: 'POST', body: fd });
     if (!res.ok) { const b = await res.json(); throw new Error(b.detail || 'Erro'); }
     const key = await res.json();
     document.getElementById('key-name').value = '';
+    document.getElementById('key-expires').value = '';
     document.getElementById('key-modal-val').textContent = key.full_key;
     document.getElementById('key-modal').classList.add('open');
     await loadKeys(currentClientId);

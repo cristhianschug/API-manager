@@ -106,14 +106,46 @@ def init_platform_db():
         )
     """)
 
+    # audit_logs
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_user  TEXT NOT NULL,
+            action      TEXT NOT NULL,
+            target_type TEXT NOT NULL,
+            target_id   INTEGER,
+            detail      TEXT,
+            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # schema_snapshots
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS schema_snapshots (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id   INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+            captured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            schema_json TEXT NOT NULL,
+            UNIQUE(client_id)
+        )
+    """)
+
     # Create indexes for common queries
     cur.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_client ON api_keys(client_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_key ON request_logs(api_key_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_client ON request_logs(client_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at)")
 
     conn.commit()
+
+    # Incremental migration: expires_at on api_keys (idempotent)
+    try:
+        cur.execute("ALTER TABLE api_keys ADD COLUMN expires_at TIMESTAMP")
+        conn.commit()
+    except Exception:
+        pass  # column already exists
 
     # Seed admin user if table is empty
     cur.execute("SELECT COUNT(*) as cnt FROM admin_users")
