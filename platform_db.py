@@ -130,6 +130,34 @@ def init_platform_db():
         )
     """)
 
+    # connector_definitions — templates reutilizáveis (ex: "painel-atendimentos")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS connector_definitions (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            name          TEXT NOT NULL UNIQUE,
+            description   TEXT,
+            contract_json TEXT NOT NULL DEFAULT '{}',
+            created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # connector_bindings — por cliente: qual rota responde cada query do conector
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS connector_bindings (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            connector_id  INTEGER NOT NULL REFERENCES connector_definitions(id) ON DELETE CASCADE,
+            client_id     INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+            query_id      TEXT NOT NULL,
+            route         TEXT NOT NULL,
+            params_json   TEXT NOT NULL DEFAULT '{}',
+            status        TEXT NOT NULL DEFAULT 'suggested',
+            confidence    REAL,
+            instance_name TEXT DEFAULT NULL,
+            created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(connector_id, client_id, query_id, instance_name)
+        )
+    """)
+
     # Create indexes for common queries
     cur.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_client ON api_keys(client_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)")

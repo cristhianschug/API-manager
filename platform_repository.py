@@ -585,3 +585,187 @@ def get_request_metrics(client_id: Optional[int] = None, hours: int = 24) -> Dic
         }
     finally:
         conn.close()
+
+# ============ CONNECTORS ============
+
+import json as _json
+import difflib as _difflib
+
+# Rotas disponíveis na API por recurso semântico
+_RESOURCE_ROUTES: Dict[str, list] = {
+    'clientes':         [('/api/v1/clientes/summary', 'summary'),      ('/api/v1/clientes', 'list')],
+    'produtos':         [('/api/v1/produtos/summary', 'summary'),       ('/api/v1/produtos', 'list')],
+    'pedidos':          [('/api/v1/pedidos/summary', 'summary'),        ('/api/v1/pedidos', 'list')],
+    'parcelas':         [('/api/v1/parcelas/summary', 'summary'),       ('/api/v1/parcelas', 'list')],
+    'fornecedores':     [('/api/v1/fornecedores/summary', 'summary'),   ('/api/v1/fornecedores', 'list')],
+    'atendimentos':     [('/api/v1/atendimentos/summary', 'summary'),   ('/api/v1/atendimentos', 'list')],
+    'ordens servico':   [('/api/v1/ordens-servico/summary', 'summary'), ('/api/v1/ordens-servico', 'list')],
+    'ordens prestacao': [('/api/v1/ordens-prestacao/summary', 'summary'), ('/api/v1/ordens-prestacao', 'list')],
+}
+
+def _normalize_table(name: str) -> str:
+    """TBIAATENDIMENTO → atendimento, TBORDEMPRESTACAOSERVICO → ordens prestacao"""
+    name = name.upper()
+    for prefix in ('TBIA', 'TBI', 'TB'):
+        if name.startswith(prefix):
+            name = name[len(prefix):]
+            break
+    # ordens: token split on known compound words
+    name = name.lower()
+    name = name.replace('ordemprestacaoservico', 'ordens prestacao')
+    name = name.replace('ordemservico', 'ordens servico')
+    name = name.rstrip('s')  # plural → singular for short names
+    return name
+
+def create_connector(name: str, description: str, contract: dict) -> dict:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO connector_definitions (name, description, contract_json) VALUES (?, ?, ?)",
+            (name, description, _json.dumps(contract))
+        )
+        conn.commit()
+        return get_connector(cur.lastrowid)
+    finally:
+        conn.close()
+
+def get_connector(connector_id: int) -> Optional[Dict[str, Any]]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT id, name, description, contract_json, created_at FROM connector_definitions WHERE id = ?",
+            (connector_id,)
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        return {'id': row['id'], 'name': row['name'], 'description': row['description'],
+                'contract': _json.loads(row['contract_json']), 'created_at': row['created_at']}
+    finally:
+        conn.close()
+
+def list_connectors() -> List[Dict[str, Any]]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT id, name, description, contract_json, created_at FROM connector_definitions ORDER BY name")
+        return [{'id': r['id'], 'name': r['name'], 'description': r['description'],
+                 'contract': _json.loads(r['contract_json']), 'created_at': r['created_at']}
+                for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+def delete_connector(connector_id: int) -> None:
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM connector_definitions WHERE id = ?", (connector_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+def upsert_binding(connector_id: int, client_id: int, query_id: str,
+                   route: str, params: Optional[dict] = None,
+                   status: str = 'suggested', confidence: Optional[float] = None,
+                   instance_name: Optional[str] = None) -> Dict[str, Any]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            INSERT INTO connector_bindings
+                (connector_id, client_id, query_id, route, params_json, status, confidence, instance_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(connector_id, client_id, query_id, instance_name)
+            DO UPDATE SET route=excluded.route, params_json=excluded.params_json,
+                          status=excluded.status, confidence=excluded.confidence
+        """, (connector_id, client_id, query_id, route,
+              _json.dumps(params or {}), status, confidence, instance_name))
+        conn.commit()
+        binding_id = cur.lastrowid
+        return {'id': binding_id, 'connector_id': connector_id, 'client_id': client_id,
+                'query_id': query_id, 'route': route, 'status': status, 'confidence': confidence}
+    finally:
+        conn.close()
+
+def get_bindings(connector_id: int, client_id: int,
+                 status: Optional[str] = None) -> List[Dict[str, Any]]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        if status:
+            cur.execute("""
+                SELECT id, connector_id, client_id, query_id, route,
+                       params_json, status, confidence, instance_name, created_at
+                FROM connector_bindings
+                WHERE connector_id=? AND client_id=? AND status=?
+                ORDER BY query_id
+            """, (connector_id, client_id, status))
+        else:
+            cur.execute("""
+                SELECT id, connector_id, client_id, query_id, route,
+                       params_json, status, confidence, instance_name, created_at
+                FROM connector_bindings
+                WHERE connector_id=? AND client_id=?
+                ORDER BY query_id
+            """, (connector_id, client_id))
+        return [{'id': r['id'], 'connector_id': r['connector_id'], 'client_id': r['client_id'],
+                 'query_id': r['query_id'], 'route': r['route'],
+                 'params': _json.loads(r['params_json']),
+                 'status': r['status'], 'confidence': r['confidence'],
+                 'instance_name': r['instance_name'], 'created_at': r['created_at']}
+                for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+def update_binding_status(binding_id: int, status: str) -> None:
+    conn = get_db_connection()
+    try:
+        conn.execute("UPDATE connector_bindings SET status=? WHERE id=?", (status, binding_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+def delete_binding(binding_id: int) -> None:
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM connector_bindings WHERE id=?", (binding_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+def suggest_bindings_from_catalog(client_id: int, connector_id: int) -> List[Dict[str, Any]]:
+    """Score catalog tables against known API routes; return best match per query_id."""
+    snap = get_schema_snapshot(client_id)
+    connector = get_connector(connector_id)
+    if not snap or not connector:
+        return []
+
+    tables = [t['name'] for t in snap.get('tables', []) if t.get('type') == 'table']
+    contract_queries = set(connector['contract'].get('queries', {}).keys())
+    if not contract_queries:
+        contract_queries = {'summary', 'list'}  # fallback: suggest both
+
+    # best match per query_id
+    best: Dict[str, Dict[str, Any]] = {}
+    for table in tables:
+        norm = _normalize_table(table)
+        top_resource, top_score = None, 0.0
+        for resource_key in _RESOURCE_ROUTES:
+            score = _difflib.SequenceMatcher(None, norm, resource_key).ratio()
+            if score > top_score:
+                top_score, top_resource = score, resource_key
+        if top_score < 0.45 or not top_resource:
+            continue
+        for route, query_id in _RESOURCE_ROUTES[top_resource]:
+            if query_id not in contract_queries:
+                continue
+            existing = best.get(query_id)
+            if not existing or top_score > existing['confidence']:
+                best[query_id] = {
+                    'table': table, 'query_id': query_id,
+                    'route': route, 'resource': top_resource,
+                    'confidence': round(top_score, 2),
+                }
+
+    return sorted(best.values(), key=lambda x: x['confidence'], reverse=True)

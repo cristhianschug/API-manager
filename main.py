@@ -55,6 +55,7 @@ from request_logging import RequestLoggingMiddleware
 from admin_routes import router as admin_router
 from ai_routes import router as ai_router
 from mcp_routes import router as mcp_router
+from connector_routes import router as connector_router
 from platform_db import init_platform_db
 
 # Initialize platform database on startup
@@ -107,6 +108,9 @@ app.include_router(ai_router)
 
 # Include MCP server (SSE at /mcp/sse)
 app.include_router(mcp_router)
+
+# Include connector system (male/female bindings + execute proxy)
+app.include_router(connector_router)
 
 # resource slug → path prefix (used to filter OpenAPI spec per client)
 _RESOURCE_PATH = {
