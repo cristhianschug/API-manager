@@ -31,7 +31,10 @@ import firebirdsql
 from repository import (
     list_clientes, get_cliente, list_produtos, get_produto,
     list_pedidos, get_pedido, list_fornecedores, get_fornecedor,
-    list_parcelas, get_parcela
+    list_parcelas, get_parcela,
+    list_atendimentos, get_atendimento,
+    list_ordens_servico, get_ordem_servico,
+    list_ordens_prestacao, get_ordem_prestacao,
 )
 from schemas import (
     ClienteListDTO, ClienteDetailDTO, ClienteCreateDTO,
@@ -39,6 +42,9 @@ from schemas import (
     PedidoListDTO, PedidoDetailDTO,
     ParcelaListDTO, ParcelaDetailDTO,
     FornecedorListDTO, FornecedorDetailDTO, FornecedorCreateDTO,
+    AtendimentoListDTO, AtendimentoDetailDTO,
+    OrdemServicoListDTO, OrdemServicoDetailDTO,
+    OrdemPrestacaoListDTO, OrdemPrestacaoDetailDTO,
     HealthDTO
 )
 from tenant_auth import get_tenant_context, require_scope, TenantContext
@@ -102,11 +108,14 @@ app.include_router(mcp_router)
 
 # resource slug → path prefix (used to filter OpenAPI spec per client)
 _RESOURCE_PATH = {
-    'clientes':    '/api/v1/clientes',
-    'produtos':    '/api/v1/produtos',
-    'pedidos':     '/api/v1/pedidos',
-    'parcelas':    '/api/v1/parcelas',
-    'fornecedores': '/api/v1/fornecedores',
+    'clientes':       '/api/v1/clientes',
+    'produtos':       '/api/v1/produtos',
+    'pedidos':        '/api/v1/pedidos',
+    'parcelas':       '/api/v1/parcelas',
+    'fornecedores':   '/api/v1/fornecedores',
+    'atendimentos':   '/api/v1/atendimentos',
+    'ordens_servico': '/api/v1/ordens-servico',
+    'ordens_prestacao': '/api/v1/ordens-prestacao',
 }
 
 @app.get("/api/v1/openapi/{client_slug}", include_in_schema=False)
@@ -431,6 +440,102 @@ async def create_fornecedor(
     except Exception as e:
         context.conn.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
+# ============ ATENDIMENTOS ============
+
+@app.get("/api/v1/atendimentos", response_model=list[AtendimentoListDTO])
+async def list_atendimentos_route(
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    cliente_id: int = Query(None),
+    context: TenantContext = Depends(require_scope('atendimentos', 'read'))
+):
+    """List atendimentos"""
+    try:
+        results = list_atendimentos(context.conn, limit=limit, offset=offset, cliente_id=cliente_id)
+        return [AtendimentoListDTO(**r) for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/atendimentos/{atendimento_id}", response_model=AtendimentoDetailDTO)
+async def get_atendimento_route(
+    atendimento_id: int,
+    context: TenantContext = Depends(require_scope('atendimentos', 'read'))
+):
+    """Get atendimento by ID"""
+    try:
+        result = get_atendimento(context.conn, atendimento_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Atendimento não encontrado")
+        return AtendimentoDetailDTO(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============ ORDENS DE SERVIÇO ============
+
+@app.get("/api/v1/ordens-servico", response_model=list[OrdemServicoListDTO])
+async def list_ordens_servico_route(
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    cliente_id: int = Query(None),
+    context: TenantContext = Depends(require_scope('ordens_servico', 'read'))
+):
+    """List ordens de serviço"""
+    try:
+        results = list_ordens_servico(context.conn, limit=limit, offset=offset, cliente_id=cliente_id)
+        return [OrdemServicoListDTO(**r) for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/ordens-servico/{os_id}", response_model=OrdemServicoDetailDTO)
+async def get_ordem_servico_route(
+    os_id: int,
+    context: TenantContext = Depends(require_scope('ordens_servico', 'read'))
+):
+    """Get ordem de serviço by ID"""
+    try:
+        result = get_ordem_servico(context.conn, os_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Ordem de serviço não encontrada")
+        return OrdemServicoDetailDTO(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============ ORDENS DE PRESTAÇÃO ============
+
+@app.get("/api/v1/ordens-prestacao", response_model=list[OrdemPrestacaoListDTO])
+async def list_ordens_prestacao_route(
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    cliente_id: int = Query(None),
+    context: TenantContext = Depends(require_scope('ordens_prestacao', 'read'))
+):
+    """List ordens de prestação de serviço"""
+    try:
+        results = list_ordens_prestacao(context.conn, limit=limit, offset=offset, cliente_id=cliente_id)
+        return [OrdemPrestacaoListDTO(**r) for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/ordens-prestacao/{ops_id}", response_model=OrdemPrestacaoDetailDTO)
+async def get_ordem_prestacao_route(
+    ops_id: int,
+    context: TenantContext = Depends(require_scope('ordens_prestacao', 'read'))
+):
+    """Get ordem de prestação by ID"""
+    try:
+        result = get_ordem_prestacao(context.conn, ops_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Ordem de prestação não encontrada")
+        return OrdemPrestacaoDetailDTO(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Error handlers
 @app.exception_handler(HTTPException)

@@ -277,6 +277,158 @@ def get_fornecedor(conn: firebirdsql.Connection, fornecedor_id: int) -> Optional
         'data_atualizacao': row[12],
     }
 
+# ============ ATENDIMENTOS ============
+
+def list_atendimentos(conn: firebirdsql.Connection, limit: int = 50, offset: int = 0,
+                      cliente_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    cur = conn.cursor()
+    where = f"WHERE a.FKCODCLI = {cliente_id}" if cliente_id else ""
+    query = f"""
+        SELECT FIRST {limit} SKIP {offset}
+            a.PKIAATENDIMENTO, a.NUMATENDIMENTO, a.FKCODCLI,
+            c.RAZAOSOCIAL, a.DATAABERTURAAT, a.DATAFIMAT,
+            a.STATUS, a.ASSUNTO, a.DATACAD
+        FROM TBIAATENDIMENTO a
+        LEFT JOIN TBCLIENTE c ON c.PKCODCLI = a.FKCODCLI
+        {where}
+        ORDER BY a.DATAABERTURAAT DESC
+    """
+    cur.execute(query)
+    rows = cur.fetchall()
+    cur.close()
+    return [{
+        'id': r[0], 'numero': r[1], 'cliente_id': r[2],
+        'cliente_nome': r[3], 'data_abertura': r[4], 'data_fim': r[5],
+        'status': r[6], 'assunto': r[7], 'data_cadastro': r[8],
+    } for r in rows]
+
+def get_atendimento(conn: firebirdsql.Connection, atendimento_id: int) -> Optional[Dict[str, Any]]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT a.PKIAATENDIMENTO, a.NUMATENDIMENTO, a.FKCODCLI,
+               c.RAZAOSOCIAL, a.DATAABERTURAAT, a.DATAFIMAT,
+               a.STATUS, a.ASSUNTO, a.DESCRICAOAT, a.REGISTROFINALIZACAO,
+               a.CONTATOAT, a.DATACAD, a.DATAATU
+        FROM TBIAATENDIMENTO a
+        LEFT JOIN TBCLIENTE c ON c.PKCODCLI = a.FKCODCLI
+        WHERE a.PKIAATENDIMENTO = ?
+    """, (atendimento_id,))
+    r = cur.fetchone()
+    cur.close()
+    if not r:
+        return None
+    return {
+        'id': r[0], 'numero': r[1], 'cliente_id': r[2],
+        'cliente_nome': r[3], 'data_abertura': r[4], 'data_fim': r[5],
+        'status': r[6], 'assunto': r[7], 'descricao': r[8],
+        'registro_finalizacao': r[9], 'contato': r[10],
+        'data_cadastro': r[11], 'data_atualizacao': r[12],
+    }
+
+# ============ ORDENS DE SERVIÇO ============
+
+def list_ordens_servico(conn: firebirdsql.Connection, limit: int = 50, offset: int = 0,
+                        cliente_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    cur = conn.cursor()
+    where = f"WHERE o.FKCLIENTE = {cliente_id}" if cliente_id else ""
+    query = f"""
+        SELECT FIRST {limit} SKIP {offset}
+            o.PKOS, o.DATAOS, o.FKCLIENTE,
+            c.RAZAOSOCIAL, o.FKSTATUS, o.FKTECNICO,
+            o.VALORTOTAL, o.DEFEITORECLAMADO, o.DATACAD
+        FROM TBOS o
+        LEFT JOIN TBCLIENTE c ON c.PKCODCLI = o.FKCLIENTE
+        {where}
+        ORDER BY o.DATAOS DESC
+    """
+    cur.execute(query)
+    rows = cur.fetchall()
+    cur.close()
+    return [{
+        'id': r[0], 'data_os': r[1], 'cliente_id': r[2],
+        'cliente_nome': r[3], 'status_id': r[4], 'tecnico_id': r[5],
+        'valor_total': float(r[6]) if r[6] else 0.0,
+        'defeito_reclamado': r[7], 'data_cadastro': r[8],
+    } for r in rows]
+
+def get_ordem_servico(conn: firebirdsql.Connection, os_id: int) -> Optional[Dict[str, Any]]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT o.PKOS, o.DATAOS, o.FKCLIENTE, c.RAZAOSOCIAL,
+               o.FKSTATUS, o.FKTECNICO, o.VALORTOTAL, o.VALORLIQUIDO,
+               o.DEFEITORECLAMADO, o.OBSGERAL, o.CONSIDERACOESFINAIS,
+               o.DATAPROVENTREGA, o.DATAENTREGA, o.DATACAD, o.DATAATU
+        FROM TBOS o
+        LEFT JOIN TBCLIENTE c ON c.PKCODCLI = o.FKCLIENTE
+        WHERE o.PKOS = ?
+    """, (os_id,))
+    r = cur.fetchone()
+    cur.close()
+    if not r:
+        return None
+    return {
+        'id': r[0], 'data_os': r[1], 'cliente_id': r[2], 'cliente_nome': r[3],
+        'status_id': r[4], 'tecnico_id': r[5],
+        'valor_total': float(r[6]) if r[6] else 0.0,
+        'valor_liquido': float(r[7]) if r[7] else 0.0,
+        'defeito_reclamado': r[8], 'obs_geral': r[9],
+        'consideracoes_finais': r[10], 'data_prov_entrega': r[11],
+        'data_entrega': r[12], 'data_cadastro': r[13], 'data_atualizacao': r[14],
+    }
+
+# ============ ORDENS DE PRESTAÇÃO DE SERVIÇO ============
+
+def list_ordens_prestacao(conn: firebirdsql.Connection, limit: int = 50, offset: int = 0,
+                           cliente_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    cur = conn.cursor()
+    where = f"WHERE o.FKCLIENTE = {cliente_id}" if cliente_id else ""
+    query = f"""
+        SELECT FIRST {limit} SKIP {offset}
+            o.PKORDEMPRESTACAOSERVICO, o.DATAORDEM, o.FKCLIENTE,
+            c.RAZAOSOCIAL, o.FKSTATUS, o.FKTECNICO,
+            o.VALORTOTAL, o.SITUACAO, o.DATACAD
+        FROM TBORDEMPRESTACAOSERVICO o
+        LEFT JOIN TBCLIENTE c ON c.PKCODCLI = o.FKCLIENTE
+        {where}
+        ORDER BY o.DATAORDEM DESC
+    """
+    cur.execute(query)
+    rows = cur.fetchall()
+    cur.close()
+    return [{
+        'id': r[0], 'data_ordem': r[1], 'cliente_id': r[2],
+        'cliente_nome': r[3], 'status_id': r[4], 'tecnico_id': r[5],
+        'valor_total': float(r[6]) if r[6] else 0.0,
+        'situacao': r[7], 'data_cadastro': r[8],
+    } for r in rows]
+
+def get_ordem_prestacao(conn: firebirdsql.Connection, ops_id: int) -> Optional[Dict[str, Any]]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT o.PKORDEMPRESTACAOSERVICO, o.DATAORDEM, o.FKCLIENTE,
+               c.RAZAOSOCIAL, o.FKSTATUS, o.FKTECNICO,
+               o.VALORTOTAL, o.TOTALSERVICO, o.TOTALPRODUTO,
+               o.SITUACAO, o.ESPECIFICACAO, o.OBS,
+               o.DATAPROVEXECUCAO, o.DATAEXECUCAO, o.DATACAD, o.DATAATU
+        FROM TBORDEMPRESTACAOSERVICO o
+        LEFT JOIN TBCLIENTE c ON c.PKCODCLI = o.FKCLIENTE
+        WHERE o.PKORDEMPRESTACAOSERVICO = ?
+    """, (ops_id,))
+    r = cur.fetchone()
+    cur.close()
+    if not r:
+        return None
+    return {
+        'id': r[0], 'data_ordem': r[1], 'cliente_id': r[2], 'cliente_nome': r[3],
+        'status_id': r[4], 'tecnico_id': r[5],
+        'valor_total': float(r[6]) if r[6] else 0.0,
+        'total_servico': float(r[7]) if r[7] else 0.0,
+        'total_produto': float(r[8]) if r[8] else 0.0,
+        'situacao': r[9], 'especificacao': r[10], 'obs': r[11],
+        'data_prov_execucao': r[12], 'data_execucao': r[13],
+        'data_cadastro': r[14], 'data_atualizacao': r[15],
+    }
+
 # ============ PARCELAS ============
 
 def list_parcelas(conn: firebirdsql.Connection, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:

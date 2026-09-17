@@ -253,7 +253,8 @@ async def create_api_key_route(
 
     try:
         raw_scopes = json.loads(scopes_json)
-        valid_resources = {'clientes', 'produtos', 'pedidos', 'parcelas', 'fornecedores'}
+        valid_resources = {'clientes', 'produtos', 'pedidos', 'parcelas', 'fornecedores',
+                           'atendimentos', 'ordens_servico', 'ordens_prestacao'}
         # Accept list [{resource, can_read, can_write}] or dict {resource: {read, write}}
         if isinstance(raw_scopes, list):
             scopes = {}
@@ -378,6 +379,50 @@ async def get_schema_tables(client_id: int, _: str = Depends(require_admin_sessi
     if not snap:
         raise HTTPException(status_code=404, detail="Nenhum snapshot. Use /schema/capture primeiro.")
     return {"tables": snap.get("tables", []), "captured_at": snap.get("captured_at")}
+
+@router.get("/clients/{client_id}/schema/columns")
+async def get_table_columns(
+    client_id: int,
+    table: str,
+    _: str = Depends(require_admin_session)
+):
+    """Introspect columns of a specific table from the client's Firebird DB."""
+    import asyncio
+    creds = get_client_credentials_for_connection(client_id)
+    if not creds:
+        raise HTTPException(status_code=404, detail="Client credentials not found")
+
+    def _cols():
+        conn = firebirdsql.connect(**creds)
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT TRIM(f.RDB$FIELD_NAME)      as col_name,
+                       TRIM(tp.RDB$TYPE_NAME)      as col_type,
+                       f.RDB$NULL_FLAG             as not_null,
+                       f.RDB$FIELD_POSITION        as field_order
+                FROM RDB$RELATION_FIELDS f
+                LEFT JOIN RDB$FIELDS fd ON fd.RDB$FIELD_NAME = f.RDB$FIELD_SOURCE
+                LEFT JOIN RDB$TYPES tp ON tp.RDB$TYPE = fd.RDB$FIELD_TYPE
+                                      AND tp.RDB$FIELD_NAME = 'RDB$FIELD_TYPE'
+                WHERE TRIM(f.RDB$RELATION_NAME) = ?
+                  AND f.RDB$SYSTEM_FLAG = 0
+                ORDER BY f.RDB$FIELD_POSITION
+            """, (table.upper(),))
+            return [{"name": r[0], "type": r[1], "not_null": bool(r[2]), "pos": r[3] or 0}
+                    for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    try:
+        cols = await asyncio.to_thread(_cols)
+        if not cols:
+            raise HTTPException(status_code=404, detail=f"Tabela '{table}' nao encontrada ou sem colunas")
+        return {"table": table.upper(), "columns": cols}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro Firebird: {e}")
 
 # ============ METRICS & LOGS ============
 
