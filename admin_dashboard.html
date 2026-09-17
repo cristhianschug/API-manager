@@ -257,6 +257,45 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 .docs-link { font-size:12px; color:var(--accent-hi); text-decoration:none; }
 .docs-link:hover { text-decoration:underline; }
 
+/* ── Desktop topbar ── */
+#desk-topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 32px; height:52px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; position:sticky; top:0; z-index:100; }
+.breadcrumb { display:flex; align-items:center; gap:6px; font-size:13px; }
+.bc-root { color:var(--text-3); }
+.bc-sep  { color:var(--text-3); font-size:11px; }
+.bc-current { color:var(--text); font-weight:500; }
+.topbar-search { background:var(--elevated); border:1px solid var(--border); border-radius:var(--r-sm); color:var(--text); font-size:12.5px; font-family:var(--sans); padding:6px 11px; outline:none; width:200px; transition:border-color .15s,width .2s; }
+.topbar-search:focus { border-color:var(--accent); width:260px; }
+.topbar-search::placeholder { color:var(--text-3); }
+
+/* ── Flow track ── */
+.flow-track { display:flex; align-items:center; margin-bottom:22px; }
+.ft-step { display:flex; flex-direction:column; align-items:center; gap:5px; }
+.ft-dot { width:28px; height:28px; border-radius:50%; border:2px solid var(--border-hi); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:var(--text-3); transition:all .2s; }
+.ft-step.ft-done .ft-dot  { background:var(--ok); border-color:var(--ok); color:#fff; }
+.ft-step.ft-curr .ft-dot  { background:var(--accent); border-color:var(--accent); color:#fff; }
+.ft-label { font-size:11px; color:var(--text-3); white-space:nowrap; }
+.ft-step.ft-done .ft-label,.ft-step.ft-curr .ft-label { color:var(--text-2); }
+.ft-line { flex:1; height:2px; background:var(--border); margin:0 8px; margin-bottom:16px; transition:background .3s; }
+.ft-line.ft-done { background:var(--ok); }
+
+/* ── Activity panel ── */
+.ov-panels { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+.ov-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+.ov-panel-hdr { padding:12px 16px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); }
+.ov-panel table { width:100%; border-collapse:collapse; }
+.ov-panel td { padding:9px 14px; border-bottom:1px solid var(--border); font-size:12.5px; }
+.ov-panel tr:last-child td { border-bottom:none; }
+.ov-panel tr:hover td { background:rgba(128,128,128,.04); }
+
+@media (max-width:768px) {
+  #desk-topbar { display:none; }
+  .ov-panels { grid-template-columns:1fr; }
+  .ft-label { display:none; }
+}
+@media (max-width:900px) {
+  #desk-topbar { padding:0 20px; }
+}
+
 /* ── Spinner ── */
 .spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; display:inline-block; }
 @keyframes spin { to { transform:rotate(360deg); } }
@@ -391,22 +430,48 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
     <!-- Main -->
     <main id="main" role="main">
 
+      <!-- Desktop topbar (sticky) -->
+      <div id="desk-topbar">
+        <nav class="breadcrumb">
+          <span class="bc-root">Anexar Admin</span>
+          <span class="bc-sep">›</span>
+          <span class="bc-current" id="bc-current">Overview</span>
+        </nav>
+        <input type="search" id="topbar-search" class="topbar-search" placeholder="Buscar clientes, logs..." oninput="globalSearch(this.value)">
+      </div>
+
       <!-- View: Overview -->
       <section id="view-overview" class="view active">
         <div class="view-head">
           <div><div class="view-title">Overview</div><div class="view-sub">Resumo da plataforma</div></div>
         </div>
+
+        <!-- Fluxo de publicação -->
+        <div class="flow-track">
+          <div class="ft-step ft-done"><div class="ft-dot">✓</div><span class="ft-label">Plataforma online</span></div>
+          <div class="ft-line" id="ft-line-1"></div>
+          <div class="ft-step" id="ft-clients"><div class="ft-dot">2</div><span class="ft-label">Clientes cadastrados</span></div>
+          <div class="ft-line" id="ft-line-2"></div>
+          <div class="ft-step" id="ft-reqs"><div class="ft-dot">3</div><span class="ft-label">Requisições recebidas</span></div>
+        </div>
+
         <div class="kpi-grid">
           <div class="kpi"><div class="kpi-icon kpi-icon-cyan">◻</div><div class="kpi-body"><div class="kpi-lbl">Clientes</div><div class="kpi-val" id="kpi-clients">—</div></div></div>
           <div class="kpi"><div class="kpi-icon kpi-icon-violet">▦</div><div class="kpi-body"><div class="kpi-lbl">Requisições (24h)</div><div class="kpi-val" id="kpi-reqs">—</div></div></div>
           <div class="kpi"><div class="kpi-icon kpi-icon-red">⚠</div><div class="kpi-body"><div class="kpi-lbl">Erros (24h)</div><div class="kpi-val" id="kpi-errs">—</div></div></div>
           <div class="kpi"><div class="kpi-icon kpi-icon-amber">≈</div><div class="kpi-body"><div class="kpi-lbl">Taxa de Erro</div><div class="kpi-val" id="kpi-rate">—</div></div></div>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Rota</th><th>Requisições</th></tr></thead>
-            <tbody id="ov-routes"></tbody>
-          </table>
+
+        <!-- Two-panel row: top routes + recent activity -->
+        <div class="ov-panels">
+          <div class="ov-panel">
+            <div class="ov-panel-hdr">Top rotas (24h)</div>
+            <table><tbody id="ov-routes"></tbody></table>
+          </div>
+          <div class="ov-panel">
+            <div class="ov-panel-hdr">Atividade recente</div>
+            <table><tbody id="ov-activity"><tr><td style="color:var(--text-3);text-align:center;padding:20px">Carregando…</td></tr></tbody></table>
+          </div>
         </div>
       </section>
 
@@ -774,12 +839,15 @@ function showApp(show) {
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────
+const VIEW_LABELS = { overview:'Overview', clientes:'Clientes', metricas:'Métricas', logs:'Logs', config:'Configurações' };
 function nav(view) {
   closeSidebar();
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
   document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
+  document.getElementById('bc-current').textContent = VIEW_LABELS[view] || view;
+  document.getElementById('topbar-search').value = '';
   if (view === 'metricas') loadMetrics();
   if (view === 'logs') { initLogFilters(); fetchLogs(); }
   if (view === 'config') loadAdmins();
@@ -788,12 +856,32 @@ function nav(view) {
 // ── Overview ───────────────────────────────────────────────────────────────
 async function loadOverview() {
   try {
-    const [clientsData, metrics] = await Promise.all([api('/clients?limit=1'), api('/metrics')]);
+    const [clientsData, metrics, logsData] = await Promise.all([
+      api('/clients?limit=1'),
+      api('/metrics'),
+      api('/logs?limit=5&hours=48'),
+    ]);
+
+    // KPIs
     document.getElementById('kpi-clients').textContent = clientsData.total;
     document.getElementById('kpi-reqs').textContent = metrics.total_requests ?? '—';
     document.getElementById('kpi-errs').textContent = metrics.error_count ?? '—';
     document.getElementById('kpi-rate').textContent =
       metrics.error_rate != null ? metrics.error_rate.toFixed(1) + '%' : '—';
+
+    // Flow track
+    const hasClients = clientsData.total > 0;
+    const hasReqs    = (metrics.total_requests ?? 0) > 0;
+    const setStep = (id, lineId, done) => {
+      const el = document.getElementById(id);
+      el.classList.toggle('ft-done', done);
+      el.classList.toggle('ft-curr', !done && (id === 'ft-clients' ? true : hasClients));
+      if (lineId) document.getElementById(lineId).classList.toggle('ft-done', done);
+    };
+    setStep('ft-clients', 'ft-line-1', hasClients);
+    setStep('ft-reqs',    'ft-line-2', hasReqs);
+
+    // Top routes
     const tbody = document.getElementById('ov-routes');
     tbody.innerHTML = '';
     (metrics.top_routes || []).forEach(r => {
@@ -801,8 +889,42 @@ async function loadOverview() {
       tr.insertCell().textContent = r.path;
       tr.insertCell().textContent = r.count;
     });
-    if (!tbody.rows.length) tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Sem dados</td></tr>';
+    if (!tbody.rows.length) tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-3);text-align:center;padding:16px">Sem dados</td></tr>';
+
+    // Recent activity
+    const act = document.getElementById('ov-activity');
+    act.innerHTML = '';
+    const logs = logsData?.logs || [];
+    if (!logs.length) {
+      act.innerHTML = '<tr><td style="color:var(--text-3);text-align:center;padding:16px">Sem atividade</td></tr>';
+    } else {
+      logs.slice(0, 5).forEach(l => {
+        const cls = l.status_code >= 500 ? 's-5xx' : l.status_code >= 400 ? 's-4xx' : 's-2xx';
+        const tr = act.insertRow();
+        tr.insertCell().innerHTML = `<span class="${cls}">${l.status_code}</span>`;
+        const path = tr.insertCell();
+        path.textContent = (l.method || '') + ' ' + (l.path || '');
+        path.style.cssText = 'max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:11.5px';
+        tr.insertCell().textContent = fmt(l.timestamp || l.created_at);
+      });
+    }
   } catch (e) { toast('Erro ao carregar overview: ' + e.message, 'err'); }
+}
+
+// ── Global search ──────────────────────────────────────────────────────────
+function globalSearch(q) {
+  const view = document.querySelector('.view.active')?.id?.replace('view-', '');
+  q = q.toLowerCase().trim();
+  if (view === 'clientes') {
+    const filtered = q ? clientsCache.filter(c =>
+      c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q)
+    ) : clientsCache;
+    renderClients(filtered);
+  } else if (view === 'logs') {
+    if (!q) { fetchLogs(); return; }
+    const rows = document.querySelectorAll('#logs-body tr');
+    rows.forEach(r => { r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+  }
 }
 
 // ── Clients list ───────────────────────────────────────────────────────────
