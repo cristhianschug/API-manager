@@ -409,7 +409,8 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       <div class="sb-nav">
         <div class="nav-label">Geral</div>
         <button class="nav-item active" data-view="overview"  onclick="nav('overview')"><span class="nav-icon">◈</span> Overview</button>
-        <button class="nav-item"        data-view="clientes"  onclick="nav('clientes')"><span class="nav-icon">◻</span> Clientes</button>
+        <button class="nav-item"        data-view="clientes"   onclick="nav('clientes')"><span class="nav-icon">◻</span> Clientes</button>
+        <button class="nav-item"        data-view="conectores" onclick="nav('conectores')"><span class="nav-icon">⇌</span> Conectores</button>
         <div class="nav-label" style="margin-top:6px">Sistema</div>
         <button class="nav-item"        data-view="metricas"  onclick="nav('metricas')"><span class="nav-icon">▦</span> Métricas</button>
         <button class="nav-item"        data-view="logs"      onclick="nav('logs')"><span class="nav-icon">≡</span> Logs</button>
@@ -707,7 +708,116 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
         </div>
       </section>
 
+      <!-- ── View: Conectores ─────────────────────────────────────────────── -->
+      <section id="view-conectores" class="view">
+        <div class="view-head">
+          <div>
+            <div class="view-title">Conectores</div>
+            <div class="view-sub">Bindings macho/fêmea entre dashboards e rotas da API</div>
+          </div>
+          <button class="btn btn-primary" onclick="openNewConnectorModal()">+ Novo conector</button>
+        </div>
+
+        <div style="background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12.5px;color:var(--text-2);line-height:1.6">
+          <strong style="color:var(--text-1)">Como funciona:</strong>
+          O conector declara o que um dashboard precisa (contrato de queries).
+          O binding mapeia cada <em>query_id</em> a uma rota real da API, por cliente.
+          O dashboard sempre chama <code>POST /api/v1/connectors/{id}/execute</code> — nunca sabe qual rota está por baixo.
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nome</th><th>Descrição</th><th>Queries</th><th>Endpoint</th><th>Criado</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="connectors-body">
+              <tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Connector detail panel -->
+        <div id="connector-panel" style="display:none;margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div>
+              <div id="cp-title" style="font-size:15px;font-weight:600;color:var(--text-1)"></div>
+              <div id="cp-subtitle" style="font-size:12px;color:var(--text-3);margin-top:2px"></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="closeConnectorPanel()">✕ Fechar</button>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <label style="font-size:12.5px;color:var(--text-2);white-space:nowrap">Bindings para:</label>
+            <select id="cp-client-select" style="flex:1;max-width:280px" onchange="loadConnectorBindings()">
+              <option value="">— selecione um cliente —</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" id="cp-suggest-btn" onclick="suggestConnectorBindings()" disabled>⚡ Auto-sugerir</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>query_id</th><th>Rota</th><th>Status</th><th>Confiança</th><th>Ações</th></tr>
+              </thead>
+              <tbody id="bindings-body">
+                <tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:16px">Selecione um cliente para ver os bindings</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Manual binding form -->
+          <details style="margin-top:12px">
+            <summary style="cursor:pointer;font-size:12.5px;color:var(--text-2);padding:4px 0">+ Adicionar binding manual</summary>
+            <div style="display:flex;gap:8px;align-items:flex-end;margin-top:10px;flex-wrap:wrap">
+              <div class="field" style="flex:0 0 140px">
+                <label>query_id</label>
+                <input type="text" id="mb-queryid" placeholder="ex: summary">
+              </div>
+              <div class="field" style="flex:1;min-width:200px">
+                <label>Rota</label>
+                <input type="text" id="mb-route" placeholder="ex: /api/v1/clientes/summary">
+              </div>
+              <div class="field" style="flex:0 0 180px">
+                <label>Params (JSON)</label>
+                <input type="text" id="mb-params" placeholder='{"limit":50}'>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="addManualBinding()" style="margin-bottom:1px">Adicionar</button>
+            </div>
+          </details>
+        </div>
+      </section>
+
     </main>
+  </div>
+</div>
+
+<!-- ── Modal: Novo Conector ─── -->
+<div class="backdrop" id="new-connector-modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-ttl">Novo conector</span>
+      <button class="modal-x" onclick="closeNewConnectorModal()" aria-label="Fechar">×</button>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+      <div class="field">
+        <label>Nome *</label>
+        <input type="text" id="nc2-name" placeholder="ex: painel-atendimentos">
+        <span class="hint">Identificador único — usado no endpoint execute</span>
+      </div>
+      <div class="field">
+        <label>Descrição</label>
+        <input type="text" id="nc2-desc" placeholder="ex: Dashboard de atendimentos ao cliente">
+      </div>
+      <div class="field">
+        <label>Queries do contrato</label>
+        <input type="text" id="nc2-queries" placeholder="summary, list, recentes" value="summary, list">
+        <span class="hint">Separadas por vírgula — definem o que este conector precisa da API</span>
+      </div>
+    </div>
+    <div style="padding:0 24px 20px;display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-ghost" onclick="closeNewConnectorModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitNewConnector()">Criar conector</button>
+    </div>
   </div>
 </div>
 
@@ -808,7 +918,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 <script>
 'use strict';
 const API = '/admin/api';
-const RESOURCES = ['clientes','produtos','pedidos','parcelas','fornecedores'];
+const RESOURCES = ['clientes','produtos','pedidos','parcelas','fornecedores','atendimentos','ordens_servico','ordens_prestacao'];
 
 // ── Theme ──────────────────────────────────────────────────────────────────
 function initTheme() {
@@ -918,7 +1028,7 @@ function showApp(show) {
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────
-const VIEW_LABELS = { overview:'Overview', clientes:'Clientes', metricas:'Métricas', logs:'Logs', auditoria:'Auditoria', config:'Configurações' };
+const VIEW_LABELS = { overview:'Overview', clientes:'Clientes', metricas:'Métricas', logs:'Logs', auditoria:'Auditoria', config:'Configurações', conectores:'Conectores' };
 function nav(view) {
   closeSidebar();
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -931,6 +1041,7 @@ function nav(view) {
   if (view === 'logs') { initLogFilters(); fetchLogs(); }
   if (view === 'auditoria') loadAudit();
   if (view === 'config') loadAdmins();
+  if (view === 'conectores') loadConnectors();
 }
 
 // ── Overview ───────────────────────────────────────────────────────────────
@@ -1490,6 +1601,233 @@ async function changePassword() {
     document.getElementById('cp-current').value = '';
     document.getElementById('cp-new').value = '';
     document.getElementById('cp-confirm').value = '';
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ── Conectores ─────────────────────────────────────────────────────────────
+let _connectors = [];
+let _activeConnectorId = null;
+
+async function loadConnectors() {
+  const tbody = document.getElementById('connectors-body');
+  tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>';
+  try {
+    _connectors = await api('/connectors');
+    renderConnectors();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--err);text-align:center;padding:16px">${esc(e.message)}</td></tr>`;
+  }
+}
+
+function renderConnectors() {
+  const tbody = document.getElementById('connectors-body');
+  if (!_connectors.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum conector. Crie o primeiro!</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _connectors.map(c => {
+    const queries = Object.keys(c.contract?.queries || {}).join(', ') || '—';
+    const date = c.created_at ? c.created_at.substring(0, 10) : '—';
+    return `<tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td style="color:var(--text-2)">${esc(c.description || '—')}</td>
+      <td><code style="font-size:11px">${esc(queries)}</code></td>
+      <td><code style="font-size:11px;color:var(--text-3)">/api/v1/connectors/${c.id}/execute</code></td>
+      <td style="color:var(--text-3)">${date}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openConnectorPanel(${c.id})">Bindings</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="deleteConnectorConfirm(${c.id},'${esc(c.name)}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openConnectorPanel(connectorId) {
+  _activeConnectorId = connectorId;
+  const c = _connectors.find(x => x.id === connectorId);
+  document.getElementById('cp-title').textContent = c ? c.name : 'Conector';
+  document.getElementById('cp-subtitle').textContent = c?.description || '';
+  document.getElementById('connector-panel').style.display = '';
+  document.getElementById('connector-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Populate client select from clientsCache if available
+  const sel = document.getElementById('cp-client-select');
+  sel.innerHTML = '<option value="">— selecione um cliente —</option>';
+  if (typeof clientsCache !== 'undefined' && clientsCache.length) {
+    clientsCache.forEach(cl => {
+      sel.insertAdjacentHTML('beforeend', `<option value="${cl.id}">${esc(cl.name)}</option>`);
+    });
+  } else {
+    api('/clients?limit=200').then(data => {
+      (data.clients || []).forEach(cl => {
+        sel.insertAdjacentHTML('beforeend', `<option value="${cl.id}">${esc(cl.name)}</option>`);
+      });
+    }).catch(() => {});
+  }
+
+  document.getElementById('bindings-body').innerHTML =
+    '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:16px">Selecione um cliente</td></tr>';
+  document.getElementById('cp-suggest-btn').disabled = true;
+}
+
+function closeConnectorPanel() {
+  document.getElementById('connector-panel').style.display = 'none';
+  _activeConnectorId = null;
+}
+
+async function loadConnectorBindings() {
+  const clientId = document.getElementById('cp-client-select').value;
+  document.getElementById('cp-suggest-btn').disabled = !clientId;
+  if (!clientId || !_activeConnectorId) return;
+  const tbody = document.getElementById('bindings-body');
+  tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="spinner"></div></td></tr>';
+  try {
+    const bindings = await api(`/clients/${clientId}/connectors/${_activeConnectorId}/bindings`);
+    renderBindings(bindings, clientId);
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--err);text-align:center;padding:16px">${esc(e.message)}</td></tr>`;
+  }
+}
+
+function renderBindings(bindings, clientId) {
+  const tbody = document.getElementById('bindings-body');
+  if (!bindings.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum binding. Use ⚡ Auto-sugerir ou adicione manualmente.</td></tr>';
+    return;
+  }
+  const statusBadge = s => {
+    const map = { active: ['b-ok','Ativo'], suggested: ['b-warn','Sugerido'], disabled: ['b-err','Desativado'] };
+    const [cls, lbl] = map[s] || ['b-warn', s];
+    return `<span class="badge ${cls}">${lbl}</span>`;
+  };
+  tbody.innerHTML = bindings.map(b => {
+    const conf = b.confidence != null ? (b.confidence * 100).toFixed(0) + '%' : '—';
+    const actions = [];
+    if (b.status === 'suggested') {
+      actions.push(`<button class="btn btn-ghost btn-sm" style="color:var(--ok)" onclick="approveBinding(${b.id},'${clientId}')">✓ Aprovar</button>`);
+      actions.push(`<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="rejectBinding(${b.id},'${clientId}')">✕ Rejeitar</button>`);
+    } else if (b.status === 'active') {
+      actions.push(`<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="rejectBinding(${b.id},'${clientId}')">Desativar</button>`);
+    } else {
+      actions.push(`<button class="btn btn-ghost btn-sm" style="color:var(--ok)" onclick="approveBinding(${b.id},'${clientId}')">Reativar</button>`);
+    }
+    actions.push(`<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="deleteBindingConfirm(${b.id},'${clientId}')">🗑</button>`);
+    return `<tr>
+      <td><code>${esc(b.query_id)}</code></td>
+      <td style="font-size:12px;color:var(--text-2)">${esc(b.route)}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td style="color:var(--text-3);font-size:12px">${conf}</td>
+      <td style="white-space:nowrap">${actions.join(' ')}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function suggestConnectorBindings() {
+  const clientId = document.getElementById('cp-client-select').value;
+  if (!clientId || !_activeConnectorId) return;
+  const btn = document.getElementById('cp-suggest-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Sugerindo…';
+  try {
+    const res = await api(`/clients/${clientId}/connectors/${_activeConnectorId}/suggest`, { method: 'POST' });
+    toast(`${res.total} sugestão(ões) criada(s)`, 'ok');
+    loadConnectorBindings();
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ Auto-sugerir';
+  }
+}
+
+async function approveBinding(bindingId, clientId) {
+  try {
+    await api(`/connectors/bindings/${bindingId}/approve`, { method: 'POST' });
+    toast('Binding ativado', 'ok');
+    loadConnectorBindings();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function rejectBinding(bindingId, clientId) {
+  try {
+    await api(`/connectors/bindings/${bindingId}/reject`, { method: 'POST' });
+    toast('Binding desativado', 'ok');
+    loadConnectorBindings();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function deleteBindingConfirm(bindingId, clientId) {
+  if (!confirm('Remover este binding?')) return;
+  try {
+    await api(`/connectors/bindings/${bindingId}`, { method: 'DELETE' });
+    toast('Binding removido', 'ok');
+    loadConnectorBindings();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function addManualBinding() {
+  const clientId = document.getElementById('cp-client-select').value;
+  if (!clientId || !_activeConnectorId) { toast('Selecione um cliente', 'err'); return; }
+  const queryId = document.getElementById('mb-queryid').value.trim();
+  const route   = document.getElementById('mb-route').value.trim();
+  const paramsRaw = document.getElementById('mb-params').value.trim();
+  if (!queryId || !route) { toast('query_id e rota são obrigatórios', 'err'); return; }
+  let params = {};
+  if (paramsRaw) {
+    try { params = JSON.parse(paramsRaw); } catch { toast('Params JSON inválido', 'err'); return; }
+  }
+  try {
+    await api(`/clients/${clientId}/connectors/${_activeConnectorId}/bindings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query_id: queryId, route, params }),
+    });
+    toast('Binding adicionado', 'ok');
+    document.getElementById('mb-queryid').value = '';
+    document.getElementById('mb-route').value = '';
+    document.getElementById('mb-params').value = '';
+    loadConnectorBindings();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function deleteConnectorConfirm(id, name) {
+  if (!confirm(`Remover conector "${name}" e todos seus bindings?`)) return;
+  try {
+    await api(`/connectors/${id}`, { method: 'DELETE' });
+    toast('Conector removido', 'ok');
+    if (_activeConnectorId === id) closeConnectorPanel();
+    loadConnectors();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function openNewConnectorModal() {
+  document.getElementById('new-connector-modal').classList.add('open');
+  document.getElementById('nc2-name').focus();
+}
+
+function closeNewConnectorModal() {
+  document.getElementById('new-connector-modal').classList.remove('open');
+}
+
+async function submitNewConnector() {
+  const name    = document.getElementById('nc2-name').value.trim();
+  const desc    = document.getElementById('nc2-desc').value.trim();
+  const queries = document.getElementById('nc2-queries').value
+    .split(',').map(s => s.trim()).filter(Boolean);
+  if (!name) { toast('Nome obrigatório', 'err'); return; }
+  const contract = { queries: Object.fromEntries(queries.map(q => [q, {}])) };
+  try {
+    await api('/connectors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description: desc, contract }),
+    });
+    toast('Conector criado', 'ok');
+    closeNewConnectorModal();
+    document.getElementById('nc2-name').value = '';
+    document.getElementById('nc2-desc').value = '';
+    document.getElementById('nc2-queries').value = 'summary, list';
+    loadConnectors();
   } catch (e) { toast(e.message, 'err'); }
 }
 
