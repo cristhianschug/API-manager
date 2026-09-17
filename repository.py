@@ -60,6 +60,19 @@ def list_clientes(conn: firebirdsql.Connection, limit: int = 50, offset: int = 0
     cur.close()
     return result
 
+def summary_clientes(conn: firebirdsql.Connection) -> Dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               SUM(CASE WHEN STATUS = 1 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN STATUS = 0 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN DATACAD >= DATEADD(-30 DAY TO CURRENT_TIMESTAMP) THEN 1 ELSE 0 END)
+        FROM TBCLIENTE
+    """)
+    r = cur.fetchone()
+    cur.close()
+    return {'total': r[0], 'ativos': r[1], 'inativos': r[2], 'novos_30_dias': r[3]}
+
 def get_cliente(conn: firebirdsql.Connection, cliente_id: int) -> Optional[Dict[str, Any]]:
     """Get cliente by ID"""
     cur = conn.cursor()
@@ -128,6 +141,20 @@ def list_produtos(conn: firebirdsql.Connection, limit: int = 100, offset: int = 
     cur.close()
     return result
 
+def summary_produtos(conn: firebirdsql.Connection) -> Dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               SUM(CASE WHEN STATUS = 1 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN STATUS = 0 THEN 1 ELSE 0 END),
+               AVG(CASE WHEN STATUS = 1 THEN VALORVENDA ELSE NULL END)
+        FROM TBPRODUTO
+    """)
+    r = cur.fetchone()
+    cur.close()
+    return {'total': r[0], 'ativos': r[1], 'inativos': r[2],
+            'valor_medio_venda': float(r[3]) if r[3] else 0.0}
+
 def get_produto(conn: firebirdsql.Connection, produto_id: int) -> Optional[Dict[str, Any]]:
     """Get produto by ID"""
     cur = conn.cursor()
@@ -184,6 +211,25 @@ def list_pedidos(conn: firebirdsql.Connection, limit: int = 50, offset: int = 0)
 
     cur.close()
     return result
+
+def summary_pedidos(conn: firebirdsql.Connection) -> Dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               COALESCE(SUM(VALORTOTAL), 0),
+               SUM(CASE WHEN DATAPED >= DATEADD(-30 DAY TO CURRENT_TIMESTAMP) THEN 1 ELSE 0 END),
+               COALESCE(SUM(CASE WHEN DATAPED >= DATEADD(-30 DAY TO CURRENT_TIMESTAMP) THEN VALORTOTAL ELSE 0 END), 0)
+        FROM TBPEDIDO
+    """)
+    r = cur.fetchone()
+    cur.execute("SELECT STATUS, COUNT(*) FROM TBPEDIDO GROUP BY STATUS ORDER BY STATUS")
+    por_status = [{'status': row[0], 'total': row[1]} for row in cur.fetchall()]
+    cur.close()
+    return {
+        'total': r[0], 'valor_total': float(r[1]) if r[1] else 0.0,
+        'ultimos_30_dias': r[2], 'valor_30_dias': float(r[3]) if r[3] else 0.0,
+        'por_status': por_status,
+    }
 
 def get_pedido(conn: firebirdsql.Connection, pedido_id: int) -> Optional[Dict[str, Any]]:
     """Get pedido by ID"""
@@ -245,6 +291,18 @@ def list_fornecedores(conn: firebirdsql.Connection, limit: int = 100, offset: in
     cur.close()
     return result
 
+def summary_fornecedores(conn: firebirdsql.Connection) -> Dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               SUM(CASE WHEN STATUS = 1 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN STATUS = 0 THEN 1 ELSE 0 END)
+        FROM TBFORNECEDOR
+    """)
+    r = cur.fetchone()
+    cur.close()
+    return {'total': r[0], 'ativos': r[1], 'inativos': r[2]}
+
 def get_fornecedor(conn: firebirdsql.Connection, fornecedor_id: int) -> Optional[Dict[str, Any]]:
     """Get fornecedor by ID"""
     cur = conn.cursor()
@@ -302,6 +360,24 @@ def list_atendimentos(conn: firebirdsql.Connection, limit: int = 50, offset: int
         'status': r[6], 'assunto': r[7], 'data_cadastro': r[8],
     } for r in rows]
 
+def summary_atendimentos(conn: firebirdsql.Connection) -> Dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               SUM(CASE WHEN DATAFIMAT IS NULL THEN 1 ELSE 0 END),
+               SUM(CASE WHEN DATAFIMAT IS NOT NULL THEN 1 ELSE 0 END),
+               SUM(CASE WHEN DATAABERTURAAT >= DATEADD(-30 DAY TO CURRENT_TIMESTAMP) THEN 1 ELSE 0 END)
+        FROM TBIAATENDIMENTO
+    """)
+    r = cur.fetchone()
+    cur.execute("SELECT STATUS, COUNT(*) FROM TBIAATENDIMENTO GROUP BY STATUS ORDER BY STATUS")
+    por_status = [{'status': row[0], 'total': row[1]} for row in cur.fetchall()]
+    cur.close()
+    return {
+        'total': r[0], 'abertos': r[1], 'fechados': r[2],
+        'ultimos_30_dias': r[3], 'por_status': por_status,
+    }
+
 def get_atendimento(conn: firebirdsql.Connection, atendimento_id: int) -> Optional[Dict[str, Any]]:
     cur = conn.cursor()
     cur.execute("""
@@ -350,6 +426,25 @@ def list_ordens_servico(conn: firebirdsql.Connection, limit: int = 50, offset: i
         'valor_total': float(r[6]) if r[6] else 0.0,
         'defeito_reclamado': r[7], 'data_cadastro': r[8],
     } for r in rows]
+
+def summary_ordens_servico(conn: firebirdsql.Connection) -> Dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               COALESCE(SUM(VALORTOTAL), 0),
+               SUM(CASE WHEN DATAOS >= DATEADD(-30 DAY TO CURRENT_TIMESTAMP) THEN 1 ELSE 0 END),
+               COALESCE(SUM(CASE WHEN DATAOS >= DATEADD(-30 DAY TO CURRENT_TIMESTAMP) THEN VALORTOTAL ELSE 0 END), 0)
+        FROM TBOS
+    """)
+    r = cur.fetchone()
+    cur.execute("SELECT FKSTATUS, COUNT(*) FROM TBOS GROUP BY FKSTATUS ORDER BY FKSTATUS")
+    por_status = [{'status_id': row[0], 'total': row[1]} for row in cur.fetchall()]
+    cur.close()
+    return {
+        'total': r[0], 'valor_total': float(r[1]) if r[1] else 0.0,
+        'ultimos_30_dias': r[2], 'valor_30_dias': float(r[3]) if r[3] else 0.0,
+        'por_status': por_status,
+    }
 
 def get_ordem_servico(conn: firebirdsql.Connection, os_id: int) -> Optional[Dict[str, Any]]:
     cur = conn.cursor()
@@ -401,6 +496,28 @@ def list_ordens_prestacao(conn: firebirdsql.Connection, limit: int = 50, offset:
         'valor_total': float(r[6]) if r[6] else 0.0,
         'situacao': r[7], 'data_cadastro': r[8],
     } for r in rows]
+
+def summary_ordens_prestacao(conn: firebirdsql.Connection) -> Dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               COALESCE(SUM(VALORTOTAL), 0),
+               COALESCE(SUM(TOTALSERVICO), 0),
+               COALESCE(SUM(TOTALPRODUTO), 0),
+               SUM(CASE WHEN DATAORDEM >= DATEADD(-30 DAY TO CURRENT_TIMESTAMP) THEN 1 ELSE 0 END)
+        FROM TBORDEMPRESTACAOSERVICO
+    """)
+    r = cur.fetchone()
+    cur.execute("SELECT FKSTATUS, COUNT(*) FROM TBORDEMPRESTACAOSERVICO GROUP BY FKSTATUS ORDER BY FKSTATUS")
+    por_status = [{'status_id': row[0], 'total': row[1]} for row in cur.fetchall()]
+    cur.close()
+    return {
+        'total': r[0],
+        'valor_total': float(r[1]) if r[1] else 0.0,
+        'total_servico': float(r[2]) if r[2] else 0.0,
+        'total_produto': float(r[3]) if r[3] else 0.0,
+        'ultimos_30_dias': r[4], 'por_status': por_status,
+    }
 
 def get_ordem_prestacao(conn: firebirdsql.Connection, ops_id: int) -> Optional[Dict[str, Any]]:
     cur = conn.cursor()
@@ -457,6 +574,27 @@ def list_parcelas(conn: firebirdsql.Connection, limit: int = 100, offset: int = 
 
     cur.close()
     return result
+
+def summary_parcelas(conn: firebirdsql.Connection) -> Dict[str, Any]:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*),
+               SUM(CASE WHEN STATUS = 0 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN STATUS <> 0 THEN 1 ELSE 0 END),
+               COALESCE(SUM(CASE WHEN STATUS = 0 THEN VALOR ELSE 0 END), 0),
+               SUM(CASE WHEN STATUS = 0 AND DATAVENC < CURRENT_DATE THEN 1 ELSE 0 END),
+               COALESCE(SUM(CASE WHEN STATUS = 0 AND DATAVENC < CURRENT_DATE THEN VALOR ELSE 0 END), 0),
+               SUM(CASE WHEN STATUS = 0 AND DATAVENC BETWEEN CURRENT_DATE AND DATEADD(7 DAY TO CURRENT_DATE) THEN 1 ELSE 0 END)
+        FROM TBPARCELAS
+    """)
+    r = cur.fetchone()
+    cur.close()
+    return {
+        'total': r[0], 'em_aberto': r[1], 'pagas': r[2],
+        'valor_aberto': float(r[3]) if r[3] else 0.0,
+        'vencidas': r[4], 'valor_vencido': float(r[5]) if r[5] else 0.0,
+        'vence_7_dias': r[6],
+    }
 
 def get_parcela(conn: firebirdsql.Connection, parcela_id: int) -> Optional[Dict[str, Any]]:
     """Get parcela by ID"""

@@ -29,12 +29,14 @@ from pathlib import Path
 import firebirdsql
 
 from repository import (
-    list_clientes, get_cliente, list_produtos, get_produto,
-    list_pedidos, get_pedido, list_fornecedores, get_fornecedor,
-    list_parcelas, get_parcela,
-    list_atendimentos, get_atendimento,
-    list_ordens_servico, get_ordem_servico,
-    list_ordens_prestacao, get_ordem_prestacao,
+    list_clientes, get_cliente, summary_clientes,
+    list_produtos, get_produto, summary_produtos,
+    list_pedidos, get_pedido, summary_pedidos,
+    list_fornecedores, get_fornecedor, summary_fornecedores,
+    list_parcelas, get_parcela, summary_parcelas,
+    list_atendimentos, get_atendimento, summary_atendimentos,
+    list_ordens_servico, get_ordem_servico, summary_ordens_servico,
+    list_ordens_prestacao, get_ordem_prestacao, summary_ordens_prestacao,
 )
 from schemas import (
     ClienteListDTO, ClienteDetailDTO, ClienteCreateDTO,
@@ -225,6 +227,13 @@ async def list_clientes_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/clientes/summary")
+async def summary_clientes_route(context: TenantContext = Depends(require_scope('clientes', 'read'))):
+    try:
+        return await asyncio.to_thread(summary_clientes, context.conn)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/clientes/{cliente_id}", response_model=ClienteDetailDTO)
 async def get_cliente_route(
     cliente_id: int,
@@ -295,6 +304,13 @@ async def list_produtos_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/produtos/summary")
+async def summary_produtos_route(context: TenantContext = Depends(require_scope('produtos', 'read'))):
+    try:
+        return await asyncio.to_thread(summary_produtos, context.conn)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/produtos/{produto_id}", response_model=ProdutoDetailDTO)
 async def get_produto_route(
     produto_id: int,
@@ -323,6 +339,13 @@ async def list_pedidos_route(
     try:
         results = list_pedidos(context.conn, limit=limit, offset=offset)
         return [PedidoListDTO(**r) for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/pedidos/summary")
+async def summary_pedidos_route(context: TenantContext = Depends(require_scope('pedidos', 'read'))):
+    try:
+        return await asyncio.to_thread(summary_pedidos, context.conn)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -357,6 +380,13 @@ async def list_parcelas_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/parcelas/summary")
+async def summary_parcelas_route(context: TenantContext = Depends(require_scope('parcelas', 'read'))):
+    try:
+        return await asyncio.to_thread(summary_parcelas, context.conn)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/parcelas/{parcela_id}", response_model=ParcelaDetailDTO)
 async def get_parcela_route(
     parcela_id: int,
@@ -386,6 +416,13 @@ async def list_fornecedores_route(
     try:
         results = list_fornecedores(context.conn, limit=limit, offset=offset, ativo=ativo)
         return [FornecedorListDTO(**r) for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/fornecedores/summary")
+async def summary_fornecedores_route(context: TenantContext = Depends(require_scope('fornecedores', 'read'))):
+    try:
+        return await asyncio.to_thread(summary_fornecedores, context.conn)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -457,6 +494,13 @@ async def list_atendimentos_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/atendimentos/summary")
+async def summary_atendimentos_route(context: TenantContext = Depends(require_scope('atendimentos', 'read'))):
+    try:
+        return await asyncio.to_thread(summary_atendimentos, context.conn)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/atendimentos/{atendimento_id}", response_model=AtendimentoDetailDTO)
 async def get_atendimento_route(
     atendimento_id: int,
@@ -489,6 +533,13 @@ async def list_ordens_servico_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/ordens-servico/summary")
+async def summary_ordens_servico_route(context: TenantContext = Depends(require_scope('ordens_servico', 'read'))):
+    try:
+        return await asyncio.to_thread(summary_ordens_servico, context.conn)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/v1/ordens-servico/{os_id}", response_model=OrdemServicoDetailDTO)
 async def get_ordem_servico_route(
     os_id: int,
@@ -518,6 +569,13 @@ async def list_ordens_prestacao_route(
     try:
         results = list_ordens_prestacao(context.conn, limit=limit, offset=offset, cliente_id=cliente_id)
         return [OrdemPrestacaoListDTO(**r) for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/ordens-prestacao/summary")
+async def summary_ordens_prestacao_route(context: TenantContext = Depends(require_scope('ordens_prestacao', 'read'))):
+    try:
+        return await asyncio.to_thread(summary_ordens_prestacao, context.conn)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
