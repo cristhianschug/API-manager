@@ -765,6 +765,19 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
             </table>
           </div>
 
+          <!-- Gaps / misses -->
+          <details id="cp-gaps-section" style="margin-top:16px">
+            <summary style="cursor:pointer;font-size:12.5px;color:var(--text-2);padding:4px 0" onclick="loadConnectorGaps()">⚠ Ver gaps (consultas sem dados ou com erro)</summary>
+            <div class="table-wrap" style="margin-top:10px">
+              <table>
+                <thead><tr><th>query_id</th><th>Rota</th><th>Tipo</th><th>Detalhe</th><th>Data</th></tr></thead>
+                <tbody id="gaps-body">
+                  <tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:12px">Clique para carregar</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
           <!-- Manual binding form -->
           <details style="margin-top:12px">
             <summary style="cursor:pointer;font-size:12.5px;color:var(--text-2);padding:4px 0">+ Adicionar binding manual</summary>
@@ -1788,6 +1801,36 @@ async function addManualBinding() {
     document.getElementById('mb-params').value = '';
     loadConnectorBindings();
   } catch (e) { toast(e.message, 'err'); }
+}
+
+async function loadConnectorGaps() {
+  const clientId = document.getElementById('cp-client-select').value;
+  if (!_activeConnectorId) return;
+  const tbody = document.getElementById('gaps-body');
+  tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="spinner"></div></td></tr>';
+  try {
+    const qs = clientId ? `?client_id=${clientId}&limit=50` : '?limit=50';
+    const gaps = await api(`/connectors/${_activeConnectorId}/misses${qs}`);
+    if (!gaps.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--ok);padding:12px">Nenhum gap registrado — todos os bindings estão respondendo com dados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = gaps.map(g => {
+      const tipo = g.error_code
+        ? `<span class="badge b-err">Erro ${g.error_code}</span>`
+        : `<span class="badge b-warn">Vazio</span>`;
+      const date = g.created_at ? g.created_at.substring(0, 16).replace('T', ' ') : '—';
+      return `<tr>
+        <td><code>${esc(g.query_id)}</code></td>
+        <td style="font-size:12px;color:var(--text-2)">${esc(g.route)}</td>
+        <td>${tipo}</td>
+        <td style="font-size:12px;color:var(--text-3);max-width:200px;overflow:hidden;text-overflow:ellipsis">${esc(g.detail || '—')}</td>
+        <td style="font-size:12px;color:var(--text-3)">${date}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--err);padding:12px">${esc(e.message)}</td></tr>`;
+  }
 }
 
 async function deleteConnectorConfirm(id, name) {

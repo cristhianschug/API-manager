@@ -29,6 +29,7 @@ from platform_repository import (
     create_connector, get_connector, list_connectors, delete_connector,
     upsert_binding, get_bindings, update_binding_status, delete_binding,
     suggest_bindings_from_catalog, log_admin_action,
+    log_connector_miss, get_connector_misses,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,6 +133,16 @@ async def reject_binding(binding_id: int, admin: str = Depends(require_admin_ses
     log_admin_action(admin, 'reject_binding', 'connector_binding', binding_id)
     return {"message": "Binding desativado"}
 
+@router.get("/admin/api/connectors/{connector_id}/misses", tags=["Admin"])
+async def list_connector_misses(
+    connector_id: int,
+    client_id: int = None,
+    limit: int = 50,
+    _: str = Depends(require_admin_session),
+):
+    """Retorna queries que falharam silenciosamente ou retornaram dados vazios."""
+    return get_connector_misses(connector_id, client_id=client_id, limit=limit)
+
 @router.delete("/admin/api/connectors/bindings/{binding_id}", tags=["Admin"])
 async def delete_binding_route(binding_id: int, admin: str = Depends(require_admin_session)):
     delete_binding(binding_id)
@@ -180,4 +191,32 @@ async def execute_connector(
 
     # ponytail: no TTL cache — add when profiling shows repeated connector calls within seconds
     results = await asyncio.gather(*[_call(b) for b in bindings])
-    return {qid: data for qid, data in results}
+    payload = {qid: data for qid, data in results}
+
+    # Log silently: bindings that errored or returned empty data
+    binding_by_qid = {b['query_id']: b for b in bindings}
+    for qid, data in payload.items():
+        b = binding_by_qid.get(qid, {})
+        if isinstance(data, dict) and 'error' in data:
+            asyncio.create_task(asyncio.to_thread(
+                log_connector_miss, connector_id, context.client_id,
+                qid, b.get('route', ''), data['error'], data.get('detail'),
+            ))
+        elif _is_empty(data):
+            asyncio.create_task(asyncio.to_thread(
+                log_connector_miss, connector_id, context.client_id,
+                qid, b.get('route', ''), None, None, True,
+            ))
+
+    return payload
+
+
+def _is_empty(data) -> bool:
+    if data is None:
+        return True
+    if isinstance(data, list):
+        return len(data) == 0
+    if isinstance(data, dict) and 'error' not in data:
+        numeric = [v for v in data.values() if isinstance(v, (int, float))]
+        return bool(numeric) and all(v == 0 for v in numeric)
+    return False

@@ -158,6 +158,21 @@ def init_platform_db():
         )
     """)
 
+    # connector_misses — queries que falharam ou retornaram vazio no execute
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS connector_misses (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            connector_id INTEGER NOT NULL,
+            client_id    INTEGER NOT NULL,
+            query_id     TEXT NOT NULL,
+            route        TEXT NOT NULL,
+            error_code   INTEGER,
+            detail       TEXT,
+            is_empty     INTEGER NOT NULL DEFAULT 0,
+            created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Create indexes for common queries
     cur.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_client ON api_keys(client_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)")
@@ -165,6 +180,7 @@ def init_platform_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_client ON request_logs(client_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_connector_misses_connector ON connector_misses(connector_id, client_id)")
 
     conn.commit()
 

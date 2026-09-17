@@ -734,6 +734,40 @@ def delete_binding(binding_id: int) -> None:
     finally:
         conn.close()
 
+def log_connector_miss(
+    connector_id: int, client_id: int, query_id: str, route: str,
+    error_code: int = None, detail: str = None, is_empty: bool = False,
+) -> None:
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            """INSERT INTO connector_misses
+               (connector_id, client_id, query_id, route, error_code, detail, is_empty)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (connector_id, client_id, query_id, route,
+             error_code, detail[:500] if detail else None, 1 if is_empty else 0),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+def get_connector_misses(connector_id: int, client_id: int = None, limit: int = 50) -> List[Dict[str, Any]]:
+    conn = get_db_connection()
+    try:
+        if client_id:
+            rows = conn.execute(
+                "SELECT * FROM connector_misses WHERE connector_id=? AND client_id=? ORDER BY created_at DESC LIMIT ?",
+                (connector_id, client_id, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM connector_misses WHERE connector_id=? ORDER BY created_at DESC LIMIT ?",
+                (connector_id, limit),
+            ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
 def suggest_bindings_from_catalog(client_id: int, connector_id: int) -> List[Dict[str, Any]]:
     """Score catalog tables against known API routes; return best match per query_id."""
     snap = get_schema_snapshot(client_id)
