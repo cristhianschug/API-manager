@@ -556,14 +556,47 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
           <!-- Schema catalog (shown after capture) -->
           <div id="schema-panel" style="display:none;margin-top:18px">
             <hr>
-            <div style="font-size:13px;font-weight:600;margin-bottom:8px">Catálogo Firebird <span id="schema-captured-at" style="font-size:11px;color:var(--text-3);font-weight:400"></span></div>
-            <div style="display:grid;grid-template-columns:repeat(3,auto);gap:16px;margin-bottom:10px">
-              <span style="font-size:12px;color:var(--text-3)">Tabelas: <strong id="schema-n-tables">—</strong></span>
-              <span style="font-size:12px;color:var(--text-3)">Procedures: <strong id="schema-n-procs">—</strong></span>
-              <span style="font-size:12px;color:var(--text-3)">Triggers: <strong id="schema-n-trigs">—</strong></span>
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">Catálogo Firebird <span id="schema-captured-at" style="font-size:11px;color:var(--text-3);font-weight:400"></span></div>
+
+            <!-- Purpose callout -->
+            <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.22);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:var(--text-2)">
+              <div style="font-weight:600;color:var(--text-1);margin-bottom:4px">Por que capturar o catálogo?</div>
+              O catálogo lê o dicionário de dados do Firebird (<code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">RDB$RELATIONS</code>, <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">RDB$PROCEDURES</code>, <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">RDB$TRIGGERS</code>) e armazena um snapshot JSON vinculado a este cliente. Esse snapshot é enviado automaticamente como contexto nas requisições de IA (<code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">/api/v1/ai/*</code>), permitindo que os agentes conheçam o modelo de dados real sem documentação manual.
             </div>
-            <div class="table-wrap" style="max-height:220px;overflow-y:auto">
-              <table><thead><tr><th>Tabela/View</th><th>Tipo</th></tr></thead>
+
+            <!-- Stats -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
+                <div style="font-size:20px;font-weight:700;color:var(--accent)" id="schema-n-tables">—</div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:2px">Tabelas / Views</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
+                <div style="font-size:20px;font-weight:700;color:var(--accent)" id="schema-n-procs">—</div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:2px">Stored Procedures</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">
+                <div style="font-size:20px;font-weight:700;color:var(--accent)" id="schema-n-trigs">—</div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:2px">Triggers</div>
+              </div>
+            </div>
+
+            <!-- How agents use this -->
+            <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:var(--text-2)">
+              <div style="font-weight:600;color:var(--text-1);margin-bottom:6px">Como os agentes usam o catálogo sem configuração adicional</div>
+              <p style="margin:0 0 6px">Os agentes de IA inferem utilidade diretamente dos <strong>nomes</strong> das tabelas e procedures — sem que o administrador precise descrever cada uma. Exemplos do que é inferido automaticamente:</p>
+              <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+                <li><strong>Tabelas com prefixo <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">TB</code></strong> → entidades principais do ERP (clientes, pedidos, produtos…). O agente sabe quais recursos existem e pode sugerir endpoints ou queries.</li>
+                <li><strong>Procedures com verbos</strong> (ex.: <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">SP_FECHAR_OS</code>, <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">SP_CALCULAR_SALDO</code>) → indicam operações de negócio disponíveis no banco, que podem ser expostas como ações da API.</li>
+                <li><strong>Triggers</strong> → revelam regras automáticas do banco (ex.: auditoria, recálculo de saldo), evitando que o agente sugira lógica duplicada na aplicação.</li>
+                <li><strong>Ausência de tabelas</strong> → o agente evita sugerir funcionalidades que o banco não suporta (ex.: não há <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">TBAGENDA</code> → não existe módulo de agenda).</li>
+              </ul>
+              <p style="margin:8px 0 0;color:var(--text-3);font-size:11px">O snapshot é re-capturado sempre que o banco evoluir. Enquanto não for recapturado, os agentes usam a versão anterior.</p>
+            </div>
+
+            <!-- Table list -->
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text-2)">Tabelas e Views capturadas</div>
+            <div class="table-wrap" style="max-height:200px;overflow-y:auto">
+              <table><thead><tr><th>Nome</th><th>Tipo</th></tr></thead>
               <tbody id="schema-tables-body"></tbody></table>
             </div>
           </div>
