@@ -130,8 +130,11 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .nav-item:hover { background:var(--elevated); color:var(--text); }
 .nav-item.active { background:var(--accent-dim); color:var(--accent-hi); font-weight:500; }
 .nav-icon { font-size:14px; width:16px; text-align:center; }
-.sb-foot { padding:12px 14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:8px; }
-.sb-user { flex:1; font-size:12.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sb-foot { padding:12px 14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:9px; }
+.sb-avatar { width:30px; height:30px; border-radius:50%; background:var(--accent-dim); border:1px solid var(--accent); color:var(--accent-hi); font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sb-user-info { flex:1; min-width:0; }
+.sb-user { display:block; font-size:12.5px; font-weight:500; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sb-role { display:block; font-size:10.5px; color:var(--text-3); }
 .theme-btn { flex-shrink:0; padding:4px 8px; font-size:14px; line-height:1; }
 
 /* ── Main area ── */
@@ -144,7 +147,13 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 
 /* ── KPI grid ── */
 .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:22px; }
-.kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; }
+.kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; display:flex; align-items:flex-start; gap:12px; }
+.kpi-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.kpi-icon-cyan   { background:rgba(6,182,212,.13);  color:#06b6d4; }
+.kpi-icon-violet { background:rgba(139,92,246,.13); color:#8b5cf6; }
+.kpi-icon-red    { background:rgba(239,68,68,.13);  color:#ef4444; }
+.kpi-icon-amber  { background:rgba(245,158,11,.13); color:#f59e0b; }
+.kpi-body { min-width:0; }
 .kpi-lbl { font-size:11px; color:var(--text-3); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
 .kpi-val { font-size:26px; font-weight:600; margin-top:4px; letter-spacing:-.02em; }
 
@@ -182,7 +191,7 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .backdrop.open { display:flex; }
 .modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:26px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; animation:min .18s ease; box-shadow:var(--shadow); }
 .modal-lg { max-width:600px; }
-@keyframes min { from { transform:scale(.96); opacity:0; } }
+@keyframes min { from { transform:scale(.98); opacity:0; } }
 .modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; gap:12px; }
 .modal-ttl { font-size:15px; font-weight:600; }
 .modal-x { width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:6px; background:transparent; border:none; color:var(--text-3); cursor:pointer; font-size:17px; flex-shrink:0; }
@@ -369,7 +378,11 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
         <button class="nav-item"        data-view="config"    onclick="nav('config')"><span class="nav-icon">⚙</span> Configurações</button>
       </div>
       <div class="sb-foot">
-        <span class="sb-user" id="sb-username"></span>
+        <div class="sb-avatar" id="sb-avatar">A</div>
+        <div class="sb-user-info">
+          <span class="sb-user" id="sb-username"></span>
+          <span class="sb-role">Administrador</span>
+        </div>
         <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema">☀</button>
         <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
       </div>
@@ -384,10 +397,10 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
           <div><div class="view-title">Overview</div><div class="view-sub">Resumo da plataforma</div></div>
         </div>
         <div class="kpi-grid">
-          <div class="kpi"><div class="kpi-lbl">Clientes</div><div class="kpi-val" id="kpi-clients">—</div></div>
-          <div class="kpi"><div class="kpi-lbl">Requisições (24h)</div><div class="kpi-val" id="kpi-reqs">—</div></div>
-          <div class="kpi"><div class="kpi-lbl">Erros (24h)</div><div class="kpi-val" id="kpi-errs">—</div></div>
-          <div class="kpi"><div class="kpi-lbl">Taxa de Erro</div><div class="kpi-val" id="kpi-rate">—</div></div>
+          <div class="kpi"><div class="kpi-icon kpi-icon-cyan">◻</div><div class="kpi-body"><div class="kpi-lbl">Clientes</div><div class="kpi-val" id="kpi-clients">—</div></div></div>
+          <div class="kpi"><div class="kpi-icon kpi-icon-violet">▦</div><div class="kpi-body"><div class="kpi-lbl">Requisições (24h)</div><div class="kpi-val" id="kpi-reqs">—</div></div></div>
+          <div class="kpi"><div class="kpi-icon kpi-icon-red">⚠</div><div class="kpi-body"><div class="kpi-lbl">Erros (24h)</div><div class="kpi-val" id="kpi-errs">—</div></div></div>
+          <div class="kpi"><div class="kpi-icon kpi-icon-amber">≈</div><div class="kpi-body"><div class="kpi-lbl">Taxa de Erro</div><div class="kpi-val" id="kpi-rate">—</div></div></div>
         </div>
         <div class="table-wrap">
           <table>
@@ -754,6 +767,7 @@ function showApp(show) {
   if (show) {
     const u = document.getElementById('l-user').value || 'admin';
     document.getElementById('sb-username').textContent = u;
+    document.getElementById('sb-avatar').textContent = u.slice(0, 2).toUpperCase();
     loadOverview();
     loadClients();
   }
