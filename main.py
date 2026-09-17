@@ -192,9 +192,11 @@ async def health_check():
     """Health check endpoint (no auth required)"""
     try:
         from platform_db import get_db_connection
-        conn = await asyncio.to_thread(get_db_connection)
-        await asyncio.to_thread(conn.execute, "SELECT 1 FROM admin_users LIMIT 1")
-        conn.close()
+        def _check():
+            c = get_db_connection()
+            c.execute("SELECT 1 FROM admin_users LIMIT 1")
+            c.close()
+        await asyncio.to_thread(_check)
         platform_db = "ok"
     except Exception as e:
         platform_db = f"error: {e}"

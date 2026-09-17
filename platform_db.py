@@ -11,7 +11,7 @@ PLATFORM_DB_PATH = Path(__file__).parent / "platform.db"
 
 def get_db_connection():
     """Get a SQLite connection to platform.db with WAL mode enabled"""
-    conn = sqlite3.connect(str(PLATFORM_DB_PATH))
+    conn = sqlite3.connect(str(PLATFORM_DB_PATH), check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
