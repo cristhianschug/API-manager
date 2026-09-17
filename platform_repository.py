@@ -468,18 +468,28 @@ def get_request_logs(client_id: Optional[int] = None, api_key_id: Optional[int] 
     finally:
         conn.close()
 
-def get_request_logs_total_count(client_id: Optional[int] = None, hours: int = 24) -> int:
-    """Get total count of requests (for pagination)"""
+def get_request_logs_total_count(
+    client_id: Optional[int] = None, hours: int = 24,
+    method: Optional[str] = None, path_filter: Optional[str] = None,
+    status_code: Optional[int] = None,
+) -> int:
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         query = "SELECT COUNT(*) as cnt FROM request_logs WHERE created_at >= ?"
         params = [datetime.utcnow() - timedelta(hours=hours)]
-
         if client_id is not None:
             query += " AND client_id = ?"
             params.append(client_id)
-
+        if method:
+            query += " AND method = ?"
+            params.append(method.upper())
+        if path_filter:
+            query += " AND path LIKE ?"
+            params.append(f"%{path_filter}%")
+        if status_code is not None:
+            query += " AND status_code = ?"
+            params.append(status_code)
         cur.execute(query, params)
         return cur.fetchone()['cnt']
     finally:

@@ -1,4 +1,5 @@
 """Admin panel API routes: clients, API keys, metrics, logs"""
+import asyncio
 import firebirdsql
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Cookie, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -149,7 +150,7 @@ async def list_clients_route(
 
 @router.get("/admins")
 async def list_admins_route(_: str = Depends(require_admin_session)):
-    return list_admin_users()
+    return await asyncio.to_thread(list_admin_users)
 
 @router.post("/admins")
 async def create_admin_route(
@@ -167,7 +168,7 @@ async def create_admin_route(
 
 @router.delete("/admins/{admin_id}")
 async def delete_admin_route(admin_id: int, username: str = Depends(require_admin_session)):
-    admins = list_admin_users()
+    admins = await asyncio.to_thread(list_admin_users)
     if len(admins) <= 1:
         raise HTTPException(status_code=400, detail="Não é possível remover o último admin")
     me = next((a for a in admins if a['username'] == username), None)
@@ -428,8 +429,7 @@ async def get_table_columns(
 
 @router.get("/metrics")
 async def get_metrics_route(client_id: Optional[int] = None, hours: int = 24, _: str = Depends(require_admin_session)):
-    """Get request metrics"""
-    return get_request_metrics(client_id, hours)
+    return await asyncio.to_thread(get_request_metrics, client_id, hours)
 
 @router.get("/logs")
 async def get_logs_route(
@@ -442,23 +442,18 @@ async def get_logs_route(
     offset: int = 0,
     _: str = Depends(require_admin_session)
 ):
-    """Get filtered request logs with pagination"""
-    logs = get_request_logs(
-        client_id=client_id,
-        method=method,
-        path_filter=path_filter,
-        status_code=status_code,
-        hours=hours,
-        limit=limit,
-        offset=offset
-    )
-    total = get_request_logs_total_count(client_id, hours)
-    return {
-        "logs": logs,
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-    }
+    def _fetch():
+        logs = get_request_logs(
+            client_id=client_id, method=method, path_filter=path_filter,
+            status_code=status_code, hours=hours, limit=limit, offset=offset,
+        )
+        total = get_request_logs_total_count(
+            client_id=client_id, hours=hours,
+            method=method, path_filter=path_filter, status_code=status_code,
+        )
+        return logs, total
+    logs, total = await asyncio.to_thread(_fetch)
+    return {"logs": logs, "total": total, "limit": limit, "offset": offset}
 
 # ============ POSTMAN COLLECTION ============
 
