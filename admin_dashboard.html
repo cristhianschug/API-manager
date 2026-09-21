@@ -4,67 +4,99 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anexar — Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ── Design tokens — dark (default) ── */
 :root {
-  --bg:           #0d0d10;
-  --surface:      #111115;
-  --elevated:     #1a1a20;
-  --border:       #26262e;
-  --border-hi:    #3a3a46;
-  --text:         #f0f0f4;
-  --text-2:       #9090a0;
-  --text-3:       #5a5a6a;
-  --accent:       #5e6ad2;
-  --accent-hi:    #818cf8;
-  --accent-dim:   rgba(94,106,210,.14);
+  --bg:           #09090d;
+  --surface:      #0f0f14;
+  --elevated:     #161620;
+  --border:       #22222e;
+  --border-hi:    #34344a;
+  --text:         #eeeef6;
+  --text-2:       #8888a8;
+  --text-3:       #52526a;
+  --accent:       #6366f1;
+  --accent-hi:    #a5b4fc;
+  --accent-dim:   rgba(99,102,241,.15);
   --ok:           #22c55e;
   --ok-dim:       rgba(34,197,94,.12);
-  --err:          #ef4444;
-  --err-dim:      rgba(239,68,68,.12);
-  --warn:         #f59e0b;
-  --warn-dim:     rgba(245,158,11,.12);
-  --shadow:       0 4px 24px rgba(0,0,0,.35);
-  --r:            7px;
-  --r-sm:         5px;
-  --sw:           232px;
+  --err:          #f87171;
+  --err-dim:      rgba(248,113,113,.12);
+  --warn:         #fbbf24;
+  --warn-dim:     rgba(251,191,36,.12);
+  --shadow:       0 8px 32px rgba(0,0,0,.5);
+  --shadow-glow:  0 0 24px rgba(99,102,241,.25);
+  --grad-accent:  linear-gradient(135deg,#6366f1,#a5b4fc);
+  --grad-sb:      linear-gradient(180deg,#0c0c14 0%,#0f0f14 100%);
+  --r:            8px;
+  --r-sm:         6px;
+  --r-lg:         12px;
+  --sw:           240px;
   --sans:         'Inter', -apple-system, sans-serif;
-  --mono:         'SF Mono','Fira Code',monospace;
+  --mono:         'Fira Code','SF Mono',monospace;
 }
 
 /* ── Light mode overrides ── */
 :root[data-theme="light"] {
-  --bg:           #f4f4f8;
+  --bg:           #f2f2f7;
   --surface:      #ffffff;
-  --elevated:     #eeeef4;
-  --border:       #dddde6;
-  --border-hi:    #c4c4d2;
-  --text:         #18181f;
-  --text-2:       #55556a;
-  --text-3:       #9090a4;
-  --accent:       #5e6ad2;
-  --accent-hi:    #4352c0;
-  --accent-dim:   rgba(94,106,210,.10);
+  --elevated:     #ebebf2;
+  --border:       #d8d8e6;
+  --border-hi:    #b8b8cc;
+  --text:         #111118;
+  --text-2:       #44445a;
+  --text-3:       #8080a0;
+  --accent:       #6366f1;
+  --accent-hi:    #4f46e5;
+  --accent-dim:   rgba(99,102,241,.10);
   --ok:           #15803d;
   --ok-dim:       rgba(21,128,61,.10);
   --err:          #b91c1c;
   --err-dim:      rgba(185,28,28,.10);
   --warn:         #b45309;
   --warn-dim:     rgba(180,83,9,.10);
-  --shadow:       0 4px 24px rgba(0,0,0,.10);
+  --shadow:       0 4px 24px rgba(0,0,0,.08);
+  --shadow-glow:  0 0 20px rgba(99,102,241,.15);
+  --grad-sb:      linear-gradient(180deg,#fafafd 0%,#ffffff 100%);
 }
 
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; transition:background .2s,color .2s; }
 
 /* ── Login ── */
-#login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; }
-.lcard { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:40px; width:100%; max-width:360px; box-shadow:var(--shadow); }
-.llogo { display:flex; align-items:center; gap:10px; margin-bottom:32px; }
-.lmark { width:30px; height:30px; background:var(--accent); border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; color:#fff; flex-shrink:0; }
-.lname { font-size:17px; font-weight:600; }
-.lcard h1 { font-size:19px; font-weight:600; margin-bottom:4px; }
+#login-screen {
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,.12) 0%, transparent 70%), var(--bg);
+}
+.lcard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 44px 40px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: var(--shadow), 0 0 0 1px rgba(99,102,241,.08);
+  position: relative;
+}
+.lcard::before {
+  content:'';
+  position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:80%; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(99,102,241,.5), transparent);
+}
+.llogo { display:flex; align-items:center; gap:12px; margin-bottom:36px; }
+.lmark {
+  width:36px; height:36px;
+  background: var(--grad-accent);
+  border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:16px; color:#fff; flex-shrink:0;
+  box-shadow: 0 4px 12px rgba(99,102,241,.4);
+}
+.lname { font-size:18px; font-weight:700; letter-spacing:-.02em; }
+.lcard h1 { font-size:20px; font-weight:700; margin-bottom:6px; letter-spacing:-.02em; }
 .lsub { color:var(--text-2); font-size:13px; margin-bottom:28px; }
 .login-theme { position:absolute; top:16px; right:16px; }
 
@@ -84,15 +116,16 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .form-row .field { margin-bottom:0; }
 
 /* ── Buttons ── */
-.btn { display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border:none; border-radius:var(--r-sm); font-size:13px; font-weight:500; font-family:var(--sans); cursor:pointer; transition:all .12s; white-space:nowrap; }
-.btn-primary { background:var(--accent); color:#fff; }
-.btn-primary:hover { background:var(--accent-hi); }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border:none; border-radius:var(--r-sm); font-size:13px; font-weight:500; font-family:var(--sans); cursor:pointer; transition:all .15s cubic-bezier(.4,0,.2,1); white-space:nowrap; }
+.btn-primary { background:var(--grad-accent); color:#fff; box-shadow:0 2px 8px rgba(99,102,241,.35); }
+.btn-primary:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow:0 4px 16px rgba(99,102,241,.45); }
+.btn-primary:active { transform:translateY(0); box-shadow:0 2px 8px rgba(99,102,241,.35); }
 .btn-ghost { background:transparent; color:var(--text-2); border:1px solid var(--border); }
-.btn-ghost:hover { background:var(--elevated); color:var(--text); }
+.btn-ghost:hover { background:var(--elevated); color:var(--text); border-color:var(--border-hi); }
 .btn-danger { background:var(--err-dim); color:var(--err); border:1px solid transparent; }
-.btn-danger:hover { background:rgba(239,68,68,.22); }
-.btn-sm { padding:4px 9px; font-size:12px; }
-.btn:disabled { opacity:.38; cursor:not-allowed; }
+.btn-danger:hover { background:rgba(248,113,113,.22); }
+.btn-sm { padding:4px 10px; font-size:12px; }
+.btn:disabled { opacity:.38; cursor:not-allowed; transform:none !important; }
 .btn-full { width:100%; justify-content:center; }
 
 /* ── App layout ── */
@@ -120,52 +153,145 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 #mob-overlay.open { display:block; }
 
 /* ── Sidebar ── */
-#sidebar { width:var(--sw); background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
-.sb-logo { padding:18px 14px 14px; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--border); }
-.sb-mark { width:27px; height:27px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0; }
-.sb-name { font-size:14.5px; font-weight:600; }
-.sb-nav { padding:8px; flex:1; }
-.nav-label { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-3); padding:10px 8px 4px; }
-.nav-item { display:flex; align-items:center; gap:8px; width:100%; padding:7px 9px; border-radius:var(--r-sm); background:transparent; border:none; color:var(--text-2); font-size:13px; font-family:var(--sans); cursor:pointer; text-align:left; transition:all .12s; }
+#sidebar {
+  width:var(--sw); background:var(--grad-sb);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto;
+}
+.sb-logo {
+  padding:20px 16px 16px;
+  display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.sb-mark {
+  width:30px; height:30px;
+  background:var(--grad-accent);
+  border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:14px; color:#fff; flex-shrink:0;
+  box-shadow:0 3px 10px rgba(99,102,241,.4);
+}
+.sb-name { font-size:14px; font-weight:700; letter-spacing:-.01em; }
+.sb-nav { padding:10px 8px; flex:1; }
+.nav-label {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--text-3);
+  padding:12px 8px 5px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:9px;
+  width:100%; padding:8px 10px;
+  border-radius:var(--r-sm); background:transparent; border:none;
+  color:var(--text-2); font-size:13px; font-family:var(--sans);
+  cursor:pointer; text-align:left;
+  transition:all .15s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
 .nav-item:hover { background:var(--elevated); color:var(--text); }
-.nav-item.active { background:var(--accent-dim); color:var(--accent-hi); font-weight:500; }
-.nav-icon { font-size:14px; width:16px; text-align:center; }
-.sb-foot { padding:12px 14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:9px; }
-.sb-avatar { width:30px; height:30px; border-radius:50%; background:var(--accent-dim); border:1px solid var(--accent); color:var(--accent-hi); font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.nav-item.active {
+  background:var(--accent-dim); color:var(--accent-hi); font-weight:500;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.nav-icon {
+  width:18px; height:18px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  opacity:.75;
+}
+.nav-item:hover .nav-icon { opacity:1; }
+.nav-item.active .nav-icon { opacity:1; }
+.sb-foot {
+  padding:12px 14px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:9px;
+}
+.sb-avatar {
+  width:30px; height:30px; border-radius:50%;
+  background:var(--grad-accent);
+  color:#fff; font-size:12px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  box-shadow:0 2px 8px rgba(99,102,241,.3);
+}
 .sb-user-info { flex:1; min-width:0; }
 .sb-user { display:block; font-size:12.5px; font-weight:500; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sb-role { display:block; font-size:10.5px; color:var(--text-3); }
-.theme-btn { flex-shrink:0; padding:4px 8px; font-size:14px; line-height:1; }
+.theme-btn { flex-shrink:0; padding:5px 7px; line-height:1; }
 
 /* ── Main area ── */
 #main { flex:1; overflow-y:auto; display:flex; flex-direction:column; min-width:0; }
 .view { display:none; padding:28px 32px; }
 .view.active { display:block; }
+
+/* ── Chat IA: lista de conversas + conversa ativa (só visível na própria aba) ── */
+#view-ia.active { display:flex; flex-direction:column; height:100vh; }
+.chat-layout { display:flex; gap:16px; flex:1; min-height:0; }
+.chat-list { width:224px; flex-shrink:0; display:flex; flex-direction:column; gap:8px; min-height:0; }
+.chat-items { display:flex; flex-direction:column; gap:6px; overflow-y:auto; min-height:0; }
+.chat-item { display:flex; align-items:flex-start; gap:6px; padding:9px 11px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface); cursor:pointer; font-size:12.5px; transition:border-color .15s,background .15s; }
+.chat-item:hover { border-color:var(--border-hi); }
+.chat-item.active { border-color:var(--accent); background:var(--accent-dim); }
+.chat-item .ci-body { flex:1; min-width:0; }
+.chat-item .ci-title { font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chat-item .ci-sub { font-size:11px; color:var(--text-3); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chat-item .ci-x { background:none; border:none; color:var(--text-3); cursor:pointer; font-size:15px; line-height:1; padding:0 2px; border-radius:4px; }
+.chat-item .ci-x:hover { color:var(--err); background:var(--err-dim); }
+.chat-main { flex:1; min-width:0; display:flex; flex-direction:column; min-height:0; }
+.chat-ctrl { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.chat-ctrl select { max-width:240px; background:var(--elevated); border:1px solid var(--border); border-radius:var(--r-sm); color:var(--text); font-size:13px; padding:7px 11px; }
+.chat-ctrl select:disabled { opacity:.6; cursor:not-allowed; }
+#ia-messages { flex:1; min-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:4px; margin-bottom:12px; }
+.chat-empty { margin:auto; text-align:center; color:var(--text-3); font-size:13px; max-width:380px; line-height:1.6; }
+@media (max-width:768px) {
+  #view-ia.active { height:auto; }
+  .chat-layout { flex-direction:column; }
+  .chat-list { width:100%; }
+  .chat-items { flex-direction:row; overflow-x:auto; }
+  .chat-item { min-width:170px; }
+}
 .view-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:22px; gap:12px; flex-wrap:wrap; }
 .view-title { font-size:17px; font-weight:600; }
 .view-sub { font-size:12.5px; color:var(--text-2); margin-top:2px; }
 
 /* ── KPI grid ── */
-.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:22px; }
-.kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; display:flex; align-items:flex-start; gap:12px; }
-.kpi-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
-.kpi-icon-cyan   { background:rgba(6,182,212,.13);  color:#06b6d4; }
-.kpi-icon-violet { background:rgba(139,92,246,.13); color:#8b5cf6; }
-.kpi-icon-red    { background:rgba(239,68,68,.13);  color:#ef4444; }
-.kpi-icon-amber  { background:rgba(245,158,11,.13); color:#f59e0b; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:24px; }
+.kpi {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-lg); padding:20px 20px 18px;
+  display:flex; align-items:flex-start; gap:14px;
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+  position:relative; overflow:hidden;
+}
+.kpi::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--kpi-accent, var(--accent));
+  opacity:.6;
+}
+.kpi:hover {
+  border-color:var(--border-hi);
+  box-shadow:var(--shadow), 0 0 0 1px var(--border-hi);
+  transform:translateY(-2px);
+}
+.kpi-icon {
+  width:40px; height:40px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.kpi-icon svg { width:20px; height:20px; }
+.kpi-icon-cyan   { background:rgba(6,182,212,.14); color:#22d3ee; --kpi-accent:#06b6d4; }
+.kpi-icon-violet { background:rgba(139,92,246,.14); color:#a78bfa; --kpi-accent:#8b5cf6; }
+.kpi-icon-red    { background:rgba(248,113,113,.14); color:#f87171; --kpi-accent:#ef4444; }
+.kpi-icon-amber  { background:rgba(251,191,36,.14); color:#fbbf24; --kpi-accent:#f59e0b; }
 .kpi-body { min-width:0; }
-.kpi-lbl { font-size:11px; color:var(--text-3); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
-.kpi-val { font-size:26px; font-weight:600; margin-top:4px; letter-spacing:-.02em; }
+.kpi-lbl { font-size:11px; color:var(--text-3); font-weight:600; text-transform:uppercase; letter-spacing:.08em; }
+.kpi-val { font-size:30px; font-weight:700; margin-top:6px; letter-spacing:-.03em; line-height:1; }
 
 /* ── Table ── */
-.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
 .table-scroll { overflow-x:auto; }
 .table-wrap table { width:100%; border-collapse:collapse; }
-.table-wrap th { background:var(--elevated); padding:9px 14px; text-align:left; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); border-bottom:1px solid var(--border); white-space:nowrap; }
-.table-wrap td { padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; }
+.table-wrap th { background:var(--elevated); padding:10px 16px; text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--text-3); border-bottom:1px solid var(--border); white-space:nowrap; }
+.table-wrap td { padding:12px 16px; border-bottom:1px solid var(--border); font-size:13px; }
 .table-wrap tr:last-child td { border-bottom:none; }
-.table-wrap tr:hover td { background:rgba(128,128,128,.04); }
-.empty-state { text-align:center; padding:44px 20px; color:var(--text-3); }
+.table-wrap tr:hover td { background:rgba(99,102,241,.04); }
+.empty-state { text-align:center; padding:48px 20px; color:var(--text-3); }
 .empty-state p { margin-top:6px; font-size:12.5px; }
 
 /* ── Badges ── */
@@ -185,6 +311,7 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .t-ok  { background:var(--ok-dim);  color:var(--ok);  border:1px solid rgba(34,197,94,.2); }
 .t-err { background:var(--err-dim); color:var(--err); border:1px solid rgba(239,68,68,.2); }
 .t-info { background:var(--accent-dim); color:var(--accent-hi); border:1px solid rgba(94,106,210,.2); }
+.t-warn { background:var(--warn-dim); color:var(--warn); border:1px solid rgba(251,191,36,.2); }
 
 /* ── Modal / Backdrop ── */
 .backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:900; align-items:center; justify-content:center; backdrop-filter:blur(2px); padding:16px; }
@@ -220,6 +347,34 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .perm-table th { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); background:var(--elevated); }
 .perm-table td { font-size:13px; }
 .perm-table tr:last-child td { border-bottom:none; }
+.perm-table tr.perm-sep td { background:var(--elevated); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); padding:6px 12px; }
+
+/* ── Lista paginada (busca + ordenação + itens por página) ── */
+.pl-bar, .pl-foot { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.pl-bar { margin:10px 0 8px; }
+.pl-foot { margin-top:10px; font-size:12px; color:var(--text-2); }
+.pl-bar input[type=search], .pl-bar select, .pl-foot select {
+  background:var(--elevated); border:1px solid var(--border); border-radius:var(--r-sm);
+  color:var(--text); font-size:12.5px; font-family:var(--sans); padding:6px 10px; outline:none;
+}
+.pl-bar input[type=search] { flex:1; min-width:160px; max-width:320px; }
+.pl-bar input[type=search]:focus, .pl-bar select:focus, .pl-foot select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+.pl-extra { display:flex; align-items:center; gap:8px; margin-left:auto; flex-wrap:wrap; }
+.pl-info { margin-left:auto; font-variant-numeric:tabular-nums; }
+.pl-empty { padding:18px; text-align:center; color:var(--text-3); font-size:12.5px; border:1px dashed var(--border); border-radius:var(--r-sm); }
+.pl-dim { opacity:.45; pointer-events:none; }
+
+/* ── Progress bar (mapeamento) ── */
+.pbar { display:flex; flex-direction:column; gap:4px; min-width:140px; }
+.pbar-track { height:6px; background:var(--elevated); border:1px solid var(--border); border-radius:99px; overflow:hidden; }
+.pbar-fill { height:100%; background:var(--grad-accent); border-radius:99px; transition:width .4s cubic-bezier(.4,0,.2,1); }
+.pbar-fill.run { background-image:linear-gradient(90deg,#6366f1 0%,#a5b4fc 50%,#6366f1 100%); background-size:200% 100%; animation:pbar-shimmer 1.4s linear infinite; }
+.pbar-fill.err { background:var(--err); }
+.pbar-fill.ok  { background:var(--ok); }
+.pbar-lbl { font-size:11px; color:var(--text-3); display:flex; justify-content:space-between; gap:8px; }
+.pbar-lbl span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@keyframes pbar-shimmer { to { background-position:-200% 0; } }
+@media (prefers-reduced-motion: reduce) { .pbar-fill.run { animation:none; } }
 .toggle { position:relative; width:34px; height:18px; display:inline-block; }
 .toggle input { opacity:0; width:0; height:0; }
 .ttrack { position:absolute; inset:0; border-radius:20px; background:var(--border-hi); cursor:pointer; transition:background .18s; }
@@ -279,7 +434,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 .ft-line.ft-done { background:var(--ok); }
 
 /* ── Activity panel ── */
-.ov-panels { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+.ov-panels { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:20px; }
 .ov-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
 .ov-panel-hdr { padding:12px 16px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); }
 .ov-panel table { width:100%; border-collapse:collapse; }
@@ -299,6 +454,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 /* ── Spinner ── */
 .spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; display:inline-block; }
 @keyframes spin { to { transform:rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.45; } }
 
 /* ── Client panel ── */
 #client-panel { display:none; margin-top:24px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:20px 24px; }
@@ -307,6 +463,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 @media (max-width:900px) {
   :root { --sw: 200px; }
   .view { padding:20px; }
+  .ov-panels { grid-template-columns:1fr 1fr; }
 }
 
 /* ── Responsive: mobile ── */
@@ -374,7 +531,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
   <div style="position:relative;">
     <!-- Theme toggle visible on login screen -->
     <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema"
-      style="position:absolute;top:-52px;right:0;">☀</button>
+      style="position:absolute;top:-52px;right:0;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg></button>
   </div>
   <div class="lcard">
     <div class="llogo"><div class="lmark">A</div><span class="lname">Anexar</span></div>
@@ -396,9 +553,9 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 
   <!-- Mobile topbar (hidden on desktop) -->
   <div class="mob-topbar">
-    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Abrir menu">☰</button>
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Abrir menu"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg></button>
     <span class="mob-title">Anexar Admin</span>
-    <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema">☀</button>
+    <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg></button>
   </div>
 
   <div class="layout">
@@ -408,15 +565,18 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       <div class="sb-logo"><div class="sb-mark">A</div><span class="sb-name">Anexar Admin</span></div>
       <div class="sb-nav">
         <div class="nav-label">Geral</div>
-        <button class="nav-item active" data-view="overview"  onclick="nav('overview')"><span class="nav-icon">◈</span> Overview</button>
-        <button class="nav-item"        data-view="clientes"   onclick="nav('clientes')"><span class="nav-icon">◻</span> Clientes</button>
-        <button class="nav-item"        data-view="conectores" onclick="nav('conectores')"><span class="nav-icon">⇌</span> Conectores</button>
+        <button class="nav-item active" data-view="overview"  onclick="nav('overview')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg></span> Overview</button>
+        <button class="nav-item"        data-view="clientes"   onclick="nav('clientes')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg></span> Clientes</button>
+        <button class="nav-item"        data-view="conectores" onclick="nav('conectores')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg></span> Conectores</button>
         <div class="nav-label" style="margin-top:6px">Sistema</div>
-        <button class="nav-item"        data-view="metricas"  onclick="nav('metricas')"><span class="nav-icon">▦</span> Métricas</button>
-        <button class="nav-item"        data-view="logs"      onclick="nav('logs')"><span class="nav-icon">≡</span> Logs</button>
-        <button class="nav-item"        data-view="auditoria" onclick="nav('auditoria')"><span class="nav-icon">◉</span> Auditoria</button>
+        <button class="nav-item"        data-view="metricas"  onclick="nav('metricas')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/></svg></span> Métricas</button>
+        <button class="nav-item"        data-view="logs"      onclick="nav('logs')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg></span> Logs</button>
+        <button class="nav-item"        data-view="auditoria" onclick="nav('auditoria')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg></span> Auditoria</button>
+        <div class="nav-label" style="margin-top:6px">IA &amp; Dados</div>
+        <button class="nav-item"        data-view="ia"        onclick="nav('ia')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"/></svg></span> Chat IA</button>
+        <button class="nav-item"        data-view="endpoints" onclick="nav('endpoints')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg></span> Endpoints</button>
         <div class="nav-label" style="margin-top:6px">Conta</div>
-        <button class="nav-item"        data-view="config"    onclick="nav('config')"><span class="nav-icon">⚙</span> Configurações</button>
+        <button class="nav-item"        data-view="config"    onclick="nav('config')"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg></span> Configurações</button>
       </div>
       <div class="sb-foot">
         <div class="sb-avatar" id="sb-avatar">A</div>
@@ -424,7 +584,7 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
           <span class="sb-user" id="sb-username"></span>
           <span class="sb-role">Administrador</span>
         </div>
-        <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema">☀</button>
+        <button class="btn btn-ghost btn-sm theme-btn" onclick="toggleTheme()" aria-label="Alternar tema"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg></button>
         <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
       </div>
     </nav>
@@ -458,10 +618,10 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
         </div>
 
         <div class="kpi-grid">
-          <div class="kpi"><div class="kpi-icon kpi-icon-cyan">◻</div><div class="kpi-body"><div class="kpi-lbl">Clientes</div><div class="kpi-val" id="kpi-clients">—</div></div></div>
-          <div class="kpi"><div class="kpi-icon kpi-icon-violet">▦</div><div class="kpi-body"><div class="kpi-lbl">Requisições (24h)</div><div class="kpi-val" id="kpi-reqs">—</div></div></div>
-          <div class="kpi"><div class="kpi-icon kpi-icon-red">⚠</div><div class="kpi-body"><div class="kpi-lbl">Erros (24h)</div><div class="kpi-val" id="kpi-errs">—</div></div></div>
-          <div class="kpi"><div class="kpi-icon kpi-icon-amber">≈</div><div class="kpi-body"><div class="kpi-lbl">Taxa de Erro</div><div class="kpi-val" id="kpi-rate">—</div></div></div>
+          <div class="kpi"><div class="kpi-icon kpi-icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg></div><div class="kpi-body"><div class="kpi-lbl">Clientes</div><div class="kpi-val" id="kpi-clients">—</div></div></div>
+          <div class="kpi"><div class="kpi-icon kpi-icon-violet"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/></svg></div><div class="kpi-body"><div class="kpi-lbl">Requisições (24h)</div><div class="kpi-val" id="kpi-reqs">—</div></div></div>
+          <div class="kpi"><div class="kpi-icon kpi-icon-red"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg></div><div class="kpi-body"><div class="kpi-lbl">Erros (24h)</div><div class="kpi-val" id="kpi-errs">—</div></div></div>
+          <div class="kpi"><div class="kpi-icon kpi-icon-amber"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg></div><div class="kpi-body"><div class="kpi-lbl">Taxa de Erro</div><div class="kpi-val" id="kpi-rate">—</div></div></div>
         </div>
 
         <!-- Two-panel row: top routes + recent activity -->
@@ -473,6 +633,10 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
           <div class="ov-panel">
             <div class="ov-panel-hdr">Atividade recente</div>
             <table><tbody id="ov-activity"><tr><td style="color:var(--text-3);text-align:center;padding:20px">Carregando…</td></tr></tbody></table>
+          </div>
+          <div class="ov-panel">
+            <div class="ov-panel-hdr">Top clientes (24h)</div>
+            <table><tbody id="ov-top-clients"><tr><td style="color:var(--text-3);text-align:center;padding:20px">Carregando…</td></tr></tbody></table>
           </div>
         </div>
       </section>
@@ -486,9 +650,9 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 
         <div class="table-wrap" id="clients-wrap">
           <table>
-            <thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Criado em</th><th>Docs</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Mapeamento</th><th>Criado em</th><th>Docs</th><th>Ações</th></tr></thead>
             <tbody id="clients-body">
-              <tr><td colspan="6" class="empty-state"><div class="spinner"></div></td></tr>
+              <tr><td colspan="7" class="empty-state"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
           <div class="pager">
@@ -543,7 +707,13 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
           <!-- Keys list -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
             <div style="font-size:13px;font-weight:600">API Keys</div>
-            <button class="btn btn-ghost btn-sm" onclick="captureSchema()" id="btn-capture-schema">⟳ Capturar catálogo</button>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <div id="panel-mapping" class="pbar" style="min-width:220px"></div>
+              <button class="btn btn-ghost btn-sm" onclick="syncMapping()" id="btn-sync-mapping" title="Confronta o banco com o mapeamento salvo: acrescenta tabelas novas, remove as que sumiram e preserva o contexto já revisado">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                Sincronizar mapeamento
+              </button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -561,8 +731,8 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
 
             <!-- Purpose callout -->
             <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.22);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:var(--text-2)">
-              <div style="font-weight:600;color:var(--text-1);margin-bottom:4px">Por que capturar o catálogo?</div>
-              O catálogo lê o dicionário de dados do Firebird (<code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">RDB$RELATIONS</code>, <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">RDB$PROCEDURES</code>, <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">RDB$TRIGGERS</code>) e armazena um snapshot JSON vinculado a este cliente. Esse snapshot é enviado automaticamente como contexto nas requisições de IA (<code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">/api/v1/ai/*</code>), permitindo que os agentes conheçam o modelo de dados real sem documentação manual.
+              <div style="font-weight:600;color:var(--text-1);margin-bottom:4px">Mapeamento automático</div>
+              Ao cadastrar o cliente, a plataforma lê o dicionário do Firebird, <strong>expõe todas as tabelas</strong> como endpoints <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">/api/v1/data/{slug}</code> e pede à IA o propósito, relacionamentos e filtros de cada uma. O Chat IA e o MCP consultam esse mapeamento para decidir <em>qual endpoint chamar</em> — nunca geram SQL. O acesso a cada tabela é liberado por API key.
             </div>
 
             <!-- Stats -->
@@ -581,19 +751,6 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
               </div>
             </div>
 
-            <!-- How agents use this -->
-            <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:var(--text-2)">
-              <div style="font-weight:600;color:var(--text-1);margin-bottom:6px">Como os agentes usam o catálogo sem configuração adicional</div>
-              <p style="margin:0 0 6px">Os agentes de IA inferem utilidade diretamente dos <strong>nomes</strong> das tabelas e procedures — sem que o administrador precise descrever cada uma. Exemplos do que é inferido automaticamente:</p>
-              <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
-                <li><strong>Tabelas com prefixo <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">TB</code></strong> → entidades principais do ERP (clientes, pedidos, produtos…). O agente sabe quais recursos existem e pode sugerir endpoints ou queries.</li>
-                <li><strong>Procedures com verbos</strong> (ex.: <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">SP_FECHAR_OS</code>, <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">SP_CALCULAR_SALDO</code>) → indicam operações de negócio disponíveis no banco, que podem ser expostas como ações da API.</li>
-                <li><strong>Triggers</strong> → revelam regras automáticas do banco (ex.: auditoria, recálculo de saldo), evitando que o agente sugira lógica duplicada na aplicação.</li>
-                <li><strong>Ausência de tabelas</strong> → o agente evita sugerir funcionalidades que o banco não suporta (ex.: não há <code style="background:rgba(0,0,0,.1);padding:1px 4px;border-radius:3px">TBAGENDA</code> → não existe módulo de agenda).</li>
-              </ul>
-              <p style="margin:8px 0 0;color:var(--text-3);font-size:11px">O snapshot é re-capturado sempre que o banco evoluir. Enquanto não for recapturado, os agentes usam a versão anterior.</p>
-            </div>
-
             <!-- Table list -->
             <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text-2)">Tabelas e Views capturadas</div>
             <div class="table-wrap" style="max-height:200px;overflow-y:auto">
@@ -608,6 +765,26 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       <section id="view-auditoria" class="view">
         <div class="view-head">
           <div><div class="view-title">Auditoria</div><div class="view-sub">Ações realizadas pelos administradores</div></div>
+        </div>
+        <div class="filter-bar">
+          <div class="field"><label>Admin</label><input type="text" id="aud-filter-admin" placeholder="usuário…" oninput="auditPage=0;loadAudit()"></div>
+          <div class="field"><label>Ação</label>
+            <select id="aud-filter-action" onchange="auditPage=0;loadAudit()">
+              <option value="">Todas</option>
+              <option>create_client</option><option>update_client</option><option>delete_client</option>
+              <option>create_api_key</option><option>revoke_api_key</option>
+              <option>create_admin</option><option>change_password</option>
+            </select>
+          </div>
+          <div class="field"><label>Tipo</label>
+            <select id="aud-filter-type" onchange="auditPage=0;loadAudit()">
+              <option value="">Todos</option>
+              <option value="client">client</option>
+              <option value="api_key">api_key</option>
+              <option value="admin">admin</option>
+            </select>
+          </div>
+          <div style="padding-top:18px"><button class="btn btn-ghost btn-sm" onclick="document.getElementById('aud-filter-admin').value='';document.getElementById('aud-filter-action').value='';document.getElementById('aud-filter-type').value='';auditPage=0;loadAudit()">Limpar</button></div>
         </div>
         <div class="table-wrap">
           <table>
@@ -626,17 +803,24 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
       <section id="view-metricas" class="view">
         <div class="view-head">
           <div><div class="view-title">Métricas</div><div class="view-sub">Atividade da API nas últimas 24h</div></div>
+          <button class="btn btn-ghost btn-sm" onclick="loadMetrics()">↺ Atualizar</button>
         </div>
         <div class="kpi-grid">
           <div class="kpi"><div class="kpi-lbl">Total de requisições</div><div class="kpi-val" id="m-total">—</div></div>
           <div class="kpi"><div class="kpi-lbl">Erros</div><div class="kpi-val" id="m-errs">—</div></div>
           <div class="kpi"><div class="kpi-lbl">Taxa de erro</div><div class="kpi-val" id="m-rate">—</div></div>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Rota</th><th>Requisições</th></tr></thead>
-            <tbody id="m-routes"></tbody>
-          </table>
+        <div class="ov-panels" style="margin-top:0">
+          <div class="ov-panel">
+            <div class="ov-panel-hdr">Top rotas (24h)</div>
+            <table><thead><tr><th>Rota</th><th style="text-align:right">Req.</th></tr></thead>
+            <tbody id="m-routes"></tbody></table>
+          </div>
+          <div class="ov-panel">
+            <div class="ov-panel-hdr">Top clientes (24h)</div>
+            <table><thead><tr><th>#</th><th>Cliente</th><th style="text-align:right">Req.</th></tr></thead>
+            <tbody id="m-top-clients"></tbody></table>
+          </div>
         </div>
       </section>
 
@@ -645,6 +829,38 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
         <div class="view-head">
           <div><div class="view-title">Configurações</div><div class="view-sub">Conta administrativa</div></div>
         </div>
+        <div style="max-width:560px;margin-bottom:28px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Provedor de IA</div>
+          <p class="hint" style="margin-bottom:14px;color:var(--text-3)">Usado pelo Chat IA, MCP e mapeamento de schemas. Escolha o fornecedor, autentique a chave e selecione um dos modelos que ela libera. A chave é cifrada no banco e nunca é exibida de volta.</p>
+          <div class="field">
+            <label for="ai-provider">1 · Fornecedor</label>
+            <select id="ai-provider" onchange="onAIProviderChange()"></select>
+          </div>
+          <div class="field" id="ai-url-field" style="display:none">
+            <label for="ai-base-url">URL base (API compatível com OpenAI)</label>
+            <input type="url" id="ai-base-url" placeholder="https://meu-gateway.exemplo.com/v1" autocomplete="off">
+          </div>
+          <div class="field" id="ai-key-field">
+            <label for="ai-api-key">2 · API key <span id="ai-key-state" style="font-weight:400;color:var(--text-3)"></span></label>
+            <input type="password" id="ai-api-key" placeholder="cole a chave do fornecedor" autocomplete="new-password" oninput="_aiModelsStale()">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+            <button class="btn btn-ghost" id="ai-auth-btn" onclick="authAIProvider()">Autenticar e carregar modelos</button>
+            <span id="ai-auth-result" style="font-size:12px;color:var(--text-2)" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="ai-model">3 · Modelo</label>
+            <select id="ai-model" disabled><option value="">Autentique para listar os modelos</option></select>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-ghost" id="ai-test-btn" onclick="testAISettings()" disabled>Testar modelo</button>
+            <button class="btn btn-primary" id="ai-save-btn" onclick="saveAISettings()" disabled>Salvar</button>
+            <span id="ai-test-result" style="font-size:12px;color:var(--text-2)" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <hr style="margin:0 0 28px">
+
         <div style="max-width:420px">
           <div style="font-size:13px;font-weight:600;margin-bottom:16px">Alterar senha</div>
           <div class="field"><label>Senha atual</label><input type="password" id="cp-current" autocomplete="current-password"></div>
@@ -800,7 +1016,130 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
         </div>
       </section>
 
+      <!-- View: Chat IA -->
+      <section id="view-ia" class="view">
+        <div class="view-head" style="margin-bottom:14px">
+          <div><div class="view-title">Chat IA</div><div class="view-sub">Cada conversa opera como uma API key e mantém seu próprio contexto — até 5 conversas simultâneas</div></div>
+        </div>
+        <div class="chat-layout">
+          <aside class="chat-list" aria-label="Conversas">
+            <button class="btn btn-primary btn-sm" id="ia-new-btn" onclick="newChat()">+ Nova conversa</button>
+            <div class="chat-items" id="ia-chat-items" role="list"></div>
+            <div class="hint" id="ia-chat-count" style="color:var(--text-3);font-size:11px"></div>
+          </aside>
+          <div class="chat-main">
+            <div class="chat-ctrl">
+              <select id="ia-client-select" aria-label="Cliente" onchange="onIaClientChange(this.value)">
+                <option value="">Selecione o cliente</option>
+              </select>
+              <select id="ia-key-select" aria-label="API key" onchange="onIaKeyChange(this.value)" disabled>
+                <option value="">Selecione a API key</option>
+              </select>
+              <span id="ia-ctx-badge" class="badge b-warn">Selecione um cliente</span>
+              <button class="btn btn-ghost btn-sm" id="ia-enrich-btn" onclick="startEnrichContext()" disabled>Gerar Contexto</button>
+              <div id="ia-mapping" class="pbar" style="min-width:200px;display:none"></div>
+              <button class="btn btn-ghost btn-sm" id="ia-sync-btn" onclick="syncMapping(document.getElementById('ia-client-select').value, 'ia-mapping')" disabled>Sincronizar mapeamento</button>
+            </div>
+            <p class="hint" id="ia-lock-hint" style="margin:-2px 0 10px;color:var(--text-3);font-size:11.5px">O chat responde <strong>como a API key escolhida</strong>: só consulta os endpoints que ela pode ler. Nenhum SQL é gerado. Cliente e key ficam fixos após a primeira pergunta — abra outra conversa para mudar.</p>
+            <div id="ia-messages" aria-live="polite"></div>
+            <div style="display:flex;gap:8px">
+              <input id="ia-input" type="text" placeholder="Faça uma pergunta sobre os dados..." autocomplete="off"
+                style="flex:1;background:var(--elevated);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:13px;padding:8px 12px;outline:none;transition:border-color .15s"
+                onkeydown="if(event.key==='Enter')sendAIChat()"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+              <button class="btn btn-primary" onclick="sendAIChat()" id="ia-send-btn">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View: Endpoints dinâmicos -->
+      <section id="view-endpoints" class="view">
+        <div class="view-head">
+          <div><div class="view-title">Endpoints Automáticos</div><div class="view-sub">Expose tabelas Firebird como REST endpoints em /api/v1/data/{slug}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <select id="ep-client-select" class="field" style="max-width:280px;background:var(--elevated);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:13px;padding:7px 11px"
+            onchange="loadEndpointsView(this.value)">
+            <option value="">Selecione um cliente</option>
+          </select>
+          <button class="btn btn-primary" style="font-size:12px;padding:5px 12px" onclick="openExposeModal()">+ Expor Tabela</button>
+        </div>
+        <div id="ep-table-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </section>
+
+      <!-- Modal: Enriquecimento de Contexto Schema -->
+      <div class="backdrop" id="enrich-context-modal" role="dialog" aria-modal="true" style="display:none">
+        <div class="modal" style="max-width:700px;max-height:85vh;overflow-y:auto">
+          <div class="modal-hdr">
+            <span class="modal-ttl">Enriquecer Contexto Semântico</span>
+            <button class="modal-x" onclick="closeEnrichModal()" aria-label="Fechar">×</button>
+          </div>
+          <div class="modal-body" style="padding:16px">
+            <div id="enrich-loading" style="display:none;text-align:center;padding:24px">
+              <div class="spinner"></div>
+              <p style="color:var(--text-2);font-size:12px;margin-top:8px">Analisando tabelas do Firebird...</p>
+            </div>
+            <div id="enrich-content" style="display:none">
+              <p style="color:var(--text-2);font-size:12px;margin-bottom:16px">Rascunho gerado pela IA. Revise e ajuste conforme necessário antes de salvar.</p>
+              <div id="enrich-tables-list" style="display:flex;flex-direction:column;gap:12px"></div>
+            </div>
+            <div id="enrich-error" style="display:none;padding:12px;background:var(--error-bg);border:1px solid var(--error);border-radius:var(--r-sm);color:var(--error)"></div>
+          </div>
+          <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--border)">
+            <button class="btn btn-ghost" onclick="closeEnrichModal()">Cancelar</button>
+            <button class="btn btn-primary" id="enrich-save-btn" onclick="saveEnrichedContext()" disabled>Salvar Contexto</button>
+          </div>
+        </div>
+      </div>
+
     </main>
+  </div>
+</div>
+
+<!-- ── Modal: Expor Tabela ─── -->
+<div class="backdrop" id="expose-table-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <span class="modal-ttl">Expor Tabela como Endpoint</span>
+      <button class="modal-x" onclick="document.getElementById('expose-table-modal').style.display='none'" aria-label="Fechar">×</button>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+      <div class="field">
+        <label>Tabela Firebird *</label>
+        <select id="expose-table-name" class="field" style="background:var(--elevated);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:13px;padding:7px 11px;width:100%"
+          onchange="loadExposeColumns(this.value)">
+          <option value="">Selecione a tabela...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Slug da URL *</label>
+        <input type="text" id="expose-slug" placeholder="ex: clientes, pedidos-2024" style="text-transform:lowercase">
+        <span class="hint">Aparecerá em /api/v1/data/{slug}</span>
+      </div>
+      <div class="field">
+        <label>Coluna PK (opcional)</label>
+        <input type="text" id="expose-pk" placeholder="ex: PKCODCLI, ID, CODIGO">
+        <span class="hint">Habilita GET /api/v1/data/{slug}/{id}</span>
+      </div>
+      <div class="field" id="expose-cols-section" style="display:none">
+        <label style="display:flex;justify-content:space-between;align-items:center">
+          <span>Colunas a expor</span>
+          <span style="display:flex;gap:8px;font-weight:400;font-size:11px">
+            <a href="#" onclick="toggleAllCols(true);return false" style="color:var(--accent)">Marcar todas</a>
+            <a href="#" onclick="toggleAllCols(false);return false" style="color:var(--muted)">Desmarcar</a>
+          </span>
+        </label>
+        <div id="expose-cols-list" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;display:flex;flex-direction:column;gap:4px;margin-top:6px">
+          <span style="color:var(--muted);font-size:12px">Carregando colunas...</span>
+        </div>
+        <span class="hint">Sem seleção = todas as colunas. Dicas: desmarque campos sensíveis (senhas, CPF).</span>
+      </div>
+      <div style="display:flex;gap:10px;padding-top:4px">
+        <button class="btn btn-primary" onclick="submitExposeTable()">Expor</button>
+        <button class="btn" onclick="document.getElementById('expose-table-modal').style.display='none'">Cancelar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -901,6 +1240,14 @@ hr { border:none; border-top:1px solid var(--border); margin:18px 0; }
     <div class="step-pane" id="sp-5">
       <div class="warn-box">⚠ Copie a API Key agora — ela não será exibida novamente.</div>
       <div class="code-blk" id="nc-result-key"></div>
+      <div style="margin-top:16px;padding:12px 14px;background:var(--elevated);border:1px solid var(--border);border-radius:var(--r-sm)">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          <div class="spinner" id="nc-map-spin" style="width:12px;height:12px"></div>
+          Mapeando o banco em segundo plano
+        </div>
+        <div id="nc-mapping" class="pbar"></div>
+        <p class="hint" style="margin-top:8px;color:var(--text-3)">Pode fechar esta janela — o mapeamento continua e o progresso aparece na lista de clientes.</p>
+      </div>
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="copyKey('nc-result-key')">Copiar key</button>
         <a id="nc-docs-link" class="btn btn-ghost" href="#" target="_blank">Ver documentação →</a>
@@ -988,7 +1335,9 @@ async function api(path, opts = {}) {
   const r = await fetch(API + path, opts);
   if (!r.ok) {
     const body = await r.json().catch(() => ({}));
-    throw new Error(body.detail || `HTTP ${r.status}`);
+    // FastAPI puro → detail; handler global do projeto → message
+    const msg = body.detail ?? body.message;
+    throw new Error(typeof msg === 'string' ? msg : (Array.isArray(msg) ? msg.map(m => m.msg || JSON.stringify(m)).join('; ') : `HTTP ${r.status}`));
   }
   return r.json().catch(() => null);
 }
@@ -1041,7 +1390,7 @@ function showApp(show) {
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────
-const VIEW_LABELS = { overview:'Overview', clientes:'Clientes', metricas:'Métricas', logs:'Logs', auditoria:'Auditoria', config:'Configurações', conectores:'Conectores' };
+const VIEW_LABELS = { overview:'Overview', clientes:'Clientes', metricas:'Métricas', logs:'Logs', auditoria:'Auditoria', config:'Configurações', conectores:'Conectores', ia:'Chat IA', endpoints:'Endpoints' };
 function nav(view) {
   closeSidebar();
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -1053,8 +1402,10 @@ function nav(view) {
   if (view === 'metricas') loadMetrics();
   if (view === 'logs') { initLogFilters(); fetchLogs(); }
   if (view === 'auditoria') loadAudit();
-  if (view === 'config') loadAdmins();
+  if (view === 'config') { loadAdmins(); loadAISettings(); }
   if (view === 'conectores') loadConnectors();
+  if (view === 'ia') { initAIChat(); }
+  if (view === 'endpoints') { _populateEpClientSelector(); }
 }
 
 // ── Overview ───────────────────────────────────────────────────────────────
@@ -1095,6 +1446,21 @@ async function loadOverview() {
     });
     if (!tbody.rows.length) tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-3);text-align:center;padding:16px">Sem dados</td></tr>';
 
+    // Top clients (skip null client_id rows — those are admin/internal requests)
+    const tcBody = document.getElementById('ov-top-clients');
+    tcBody.innerHTML = '';
+    (metrics.top_clients || []).filter(c => c.id != null).forEach((c, i) => {
+      const tr = tcBody.insertRow();
+      const rank = tr.insertCell();
+      rank.textContent = `#${i + 1}`;
+      rank.style.cssText = 'color:var(--text-3);width:28px;font-family:var(--mono);font-size:11px';
+      tr.insertCell().textContent = c.name || `#${c.id}`;
+      const cnt = tr.insertCell();
+      cnt.textContent = c.count;
+      cnt.style.cssText = 'text-align:right;color:var(--accent-hi);font-family:var(--mono);font-size:12px';
+    });
+    if (!tcBody.rows.length) tcBody.innerHTML = '<tr><td colspan="3" style="color:var(--text-3);text-align:center;padding:16px">Sem dados</td></tr>';
+
     // Recent activity
     const act = document.getElementById('ov-activity');
     act.innerHTML = '';
@@ -1123,7 +1489,14 @@ async function loadAudit() {
   const tbody = document.getElementById('audit-body');
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px"><div class="spinner"></div></td></tr>';
   try {
-    const data = await api(`/audit-logs?limit=${AUDIT_LIMIT}&offset=${auditPage * AUDIT_LIMIT}`);
+    const admin  = document.getElementById('aud-filter-admin')?.value.trim() || '';
+    const action = document.getElementById('aud-filter-action')?.value || '';
+    const ttype  = document.getElementById('aud-filter-type')?.value || '';
+    const qs = new URLSearchParams({ limit: AUDIT_LIMIT, offset: auditPage * AUDIT_LIMIT });
+    if (admin)  qs.set('admin_user', admin);
+    if (action) qs.set('action', action);
+    if (ttype)  qs.set('target_type', ttype);
+    const data = await api(`/audit-logs?${qs}`);
     tbody.innerHTML = '';
     if (!data.logs.length) {
       tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma ação registrada ainda</td></tr>';
@@ -1149,16 +1522,140 @@ async function loadAudit() {
 }
 
 // ── Schema catalog ─────────────────────────────────────────────────────────
-async function captureSchema() {
-  if (!currentClientId) return;
-  const btn = document.getElementById('btn-capture-schema');
-  btn.disabled = true; btn.textContent = '⟳ Capturando…';
+// ── Provedor de IA (Configurações) ─────────────────────────────────────────
+// Fluxo: fornecedor → chave → autenticar (lista modelos do próprio fornecedor) → modelo → testar → salvar.
+// As URLs dos fornecedores ficam no backend; o painel só envia o id.
+let _aiProviders = [], _aiSaved = null;
+const _aiEl = id => document.getElementById(id);
+const _aiProv = () => _aiProviders.find(p => p.id === _aiEl('ai-provider').value) || {};
+
+async function loadAISettings() {
   try {
-    const res = await api(`/clients/${currentClientId}/schema/capture`, { method: 'POST' });
-    toast(`Catálogo capturado: ${res.tables} tabelas, ${res.procedures} procedures`, 'ok');
-    await loadSchema();
-  } catch (e) { toast('Erro: ' + e.message, 'err'); }
-  finally { btn.disabled = false; btn.textContent = '⟳ Capturar catálogo'; }
+    [_aiProviders, _aiSaved] = await Promise.all([api('/settings/ai/providers'), api('/settings/ai')]);
+    const sel = _aiEl('ai-provider');
+    sel.innerHTML = _aiProviders.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+    sel.value = _aiSaved.provider;
+    _aiEl('ai-base-url').value = _aiSaved.custom_base_url || '';
+    onAIProviderChange(true);
+    // configuração já salva e autenticável → carrega os modelos sem pedir a chave de novo
+    if (_aiSaved.has_api_key || !_aiProv().needs_key) await authAIProvider(true);
+  } catch (e) { toast('Erro ao carregar provedor de IA: ' + e.message, 'err'); }
+}
+
+function _aiModelsStale(msg = 'Autentique para listar os modelos') {
+  const m = _aiEl('ai-model');
+  m.innerHTML = `<option value="">${esc(msg)}</option>`; m.disabled = true;
+  _aiEl('ai-test-btn').disabled = true; _aiEl('ai-save-btn').disabled = true;
+  _aiEl('ai-auth-result').textContent = ''; _aiEl('ai-test-result').textContent = '';
+}
+
+function onAIProviderChange(initial = false) {
+  const p = _aiProv(), same = _aiSaved && _aiSaved.provider === p.id;
+  _aiEl('ai-url-field').style.display = p.custom ? '' : 'none';
+  _aiEl('ai-key-field').style.display = p.needs_key ? '' : 'none';
+  _aiEl('ai-api-key').value = '';
+  _aiEl('ai-api-key').placeholder = same && _aiSaved.has_api_key ? 'deixe em branco para manter a chave salva' : 'cole a chave do fornecedor';
+  _aiEl('ai-key-state').textContent = same && _aiSaved.has_api_key ? `(salva: ${_aiSaved.api_key_masked})` : (p.needs_key ? '' : '(não exige chave)');
+  _aiModelsStale();
+  if (!initial && !p.needs_key && !p.custom) authAIProvider(true);
+}
+
+function _aiBody(withModel = false) {
+  const p = _aiProv();
+  const body = { provider: p.id, api_key: _aiEl('ai-api-key').value.trim() || null };
+  if (p.custom) body.base_url = _aiEl('ai-base-url').value.trim();
+  if (withModel) body.model = _aiEl('ai-model').value;
+  return body;
+}
+
+async function authAIProvider(silent = false) {
+  const p = _aiProv(), body = _aiBody();
+  const same = _aiSaved && _aiSaved.provider === p.id && _aiSaved.has_api_key;
+  if (p.needs_key && !body.api_key && !same) { if (!silent) toast('Informe a API key do fornecedor', 'err'); return; }
+  if (p.custom && !body.base_url) { if (!silent) toast('Informe a URL base', 'err'); return; }
+  const btn = _aiEl('ai-auth-btn'), out = _aiEl('ai-auth-result');
+  btn.disabled = true; out.style.color = 'var(--text-2)'; out.innerHTML = '<span class="spinner" style="width:12px;height:12px;vertical-align:-2px"></span> Autenticando…';
+  try {
+    const r = await api('/settings/ai/models', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const m = _aiEl('ai-model');
+    m.innerHTML = r.models.map(id => `<option value="${esc(id)}">${esc(id)}</option>`).join('');
+    m.disabled = false;
+    if (_aiSaved && _aiSaved.provider === p.id && r.models.includes(_aiSaved.model)) m.value = _aiSaved.model;
+    _aiEl('ai-test-btn').disabled = false; _aiEl('ai-save-btn').disabled = false;
+    out.textContent = `${p.needs_key ? 'Chave válida' : 'Conectado'} · ${r.count} ${r.count === 1 ? 'modelo disponível' : 'modelos disponíveis'}`; out.style.color = 'var(--ok)';
+  } catch (e) {
+    _aiModelsStale('Não foi possível listar os modelos');
+    out.textContent = e.message; out.style.color = 'var(--err)';
+  } finally { btn.disabled = false; }
+}
+
+async function testAISettings() {
+  const btn = _aiEl('ai-test-btn'), out = _aiEl('ai-test-result');
+  btn.disabled = true; out.textContent = 'Testando…'; out.style.color = 'var(--text-2)';
+  try {
+    const r = await api('/settings/ai/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_aiBody(true)) });
+    out.textContent = `OK · ${r.model} respondeu em ${r.latency_ms} ms`; out.style.color = 'var(--ok)';
+  } catch (e) { out.textContent = e.message; out.style.color = 'var(--err)'; }
+  finally { btn.disabled = false; }
+}
+
+async function saveAISettings() {
+  const btn = _aiEl('ai-save-btn'); btn.disabled = true;
+  try {
+    _aiSaved = await api('/settings/ai', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_aiBody(true)) });
+    toast(`Provedor salvo: ${_aiSaved.provider_name} · ${_aiSaved.model} — vale para Chat, MCP e mapeamento`, 'ok');
+    _aiEl('ai-api-key').value = '';
+    _aiEl('ai-key-state').textContent = _aiSaved.has_api_key ? `(salva: ${_aiSaved.api_key_masked})` : '';
+  } catch (e) { toast('Erro ao salvar: ' + e.message, 'err'); }
+  finally { btn.disabled = false; }
+}
+
+// ── Mapeamento automático (progresso) ──────────────────────────────────────
+const MAP_LABEL = { pending: 'Aguardando mapeamento', running: 'Mapeando…', ok: 'Mapeado', error: 'Falha no mapeamento' };
+
+function pbarHtml(st) {
+  if (!st) return '';
+  const status = st.mapping_status ?? st.status ?? 'pending';
+  const pct = status === 'ok' ? 100 : (st.mapping_progress ?? st.progress ?? 0);
+  const step = st.mapping_step ?? st.step;
+  const err  = st.mapping_error ?? st.error;
+  const label = status === 'error' ? (err || MAP_LABEL.error) : (step || MAP_LABEL[status] || status);
+  return `
+    <div class="pbar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Mapeamento do banco">
+      <div class="pbar-fill ${status}" style="width:${pct}%"></div>
+    </div>
+    <div class="pbar-lbl"><span title="${esc(label)}">${esc(label)}</span><span>${status === 'error' ? '—' : pct + '%'}</span></div>`;
+}
+
+const _mapPolls = new Map();  // clientId → timer
+function pollMapping(clientId, onUpdate) {
+  if (_mapPolls.has(clientId)) return;
+  const tick = async () => {
+    try {
+      const st = await api(`/clients/${clientId}/mapping`);
+      onUpdate(st);
+      if (st.status === 'running' || st.running) { _mapPolls.set(clientId, setTimeout(tick, 2500)); return; }
+    } catch { /* cliente removido ou sessão expirada */ }
+    _mapPolls.delete(clientId);
+  };
+  _mapPolls.set(clientId, setTimeout(tick, 0));
+}
+
+async function syncMapping(clientId = currentClientId, barId = 'panel-mapping') {
+  if (!clientId) return;
+  const bar = document.getElementById(barId);
+  try {
+    const st = await api(`/clients/${clientId}/mapping/start?mode=sync`, { method: 'POST' });
+    if (bar) { bar.style.display = ''; bar.innerHTML = pbarHtml(st); }
+    toast('Sincronização iniciada — só o que mudou será reprocessado', 'info');
+    pollMapping(clientId, s => {
+      if (bar) bar.innerHTML = pbarHtml(s);
+      const row = document.querySelector(`#clients-body [data-map-client="${clientId}"]`);
+      if (row) row.innerHTML = pbarHtml(s);
+      if (s.status === 'ok') { toast('Mapeamento concluído', 'ok'); if (clientId == currentClientId) loadSchema(); if (barId === 'ia-mapping') checkContextStatus(clientId); }
+      if (s.status === 'error') toast('Mapeamento falhou: ' + (s.error || ''), 'err');
+    });
+  } catch (e) { toast('Erro ao sincronizar: ' + e.message, 'err'); }
 }
 
 async function loadSchema() {
@@ -1221,7 +1718,7 @@ function renderClients(clients) {
   const tbody = document.getElementById('clients-body');
   tbody.innerHTML = '';
   if (!clients.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum cliente cadastrado<p>Clique em "Novo cliente" para começar</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum cliente cadastrado<p>Clique em "Novo cliente" para começar</p></td></tr>';
     return;
   }
   clients.forEach(c => {
@@ -1229,6 +1726,11 @@ function renderClients(clients) {
     tr.insertCell().textContent = c.name;
     const tdSlug = tr.insertCell(); tdSlug.innerHTML = `<code>${esc(c.slug)}</code>`;
     const tdSt = tr.insertCell(); tdSt.innerHTML = `<span class="badge ${c.status === 'active' ? 'b-ok' : 'b-warn'}">${esc(c.status)}</span>`;
+    const tdMap = tr.insertCell();
+    tdMap.innerHTML = `<div class="pbar" data-map-client="${c.id}">${pbarHtml(c)}</div>`;
+    if (c.mapping_status === 'running') {
+      pollMapping(c.id, s => { const el = tdMap.querySelector('.pbar'); if (el) el.innerHTML = pbarHtml(s); });
+    }
     tr.insertCell().textContent = fmtDate(c.created_at);
     const tdDocs = tr.insertCell();
     const a = document.createElement('a');
@@ -1265,7 +1767,10 @@ async function openPanel(clientId) {
       div.innerHTML = `<div class="ii-lbl">${esc(l)}</div><div class="ii-val">${esc(String(v ?? '—'))}</div>`;
       ig.appendChild(div);
     });
-    buildNewKeyPerms();
+    const bar = document.getElementById('panel-mapping');
+    bar.innerHTML = pbarHtml(await api(`/clients/${clientId}/mapping`));
+    pollMapping(clientId, s => { bar.innerHTML = pbarHtml(s); if (s.status === 'ok') loadSchema(); });
+    await buildNewKeyPerms(clientId);
     await loadKeys(clientId);
     await loadSchema();
   } catch (e) { toast('Erro ao carregar cliente: ' + e.message, 'err'); }
@@ -1325,30 +1830,159 @@ async function loadKeys(clientId) {
   } catch (e) { toast('Erro ao carregar keys: ' + e.message, 'err'); }
 }
 
-function buildNewKeyPerms() {
-  const tbody = document.getElementById('new-key-perms-body');
+// Matriz de permissões: recursos ERP (leitura/escrita) + tabelas dinâmicas (somente leitura).
+// prefix = 'nkp' (painel) | 'ncp' (novo cliente). Tabelas só existem após o mapeamento.
+function _permRow(tbody, prefix, id, label, { write = true, checked = false, hint = '' } = {}) {
+  const tr = tbody.insertRow();
+  const c0 = tr.insertCell();
+  c0.innerHTML = `${esc(label)}${hint ? `<div style="font-size:11px;color:var(--text-3)">${esc(hint)}</div>` : ''}`;
+  const safe = id.replace(/[^A-Za-z0-9_*-]/g, '_');
+  tr.insertCell().innerHTML = `<label class="toggle"><input type="checkbox" class="perm-cb" data-resource="${esc(id)}" data-mode="read" id="${prefix}-${safe}-read" ${checked ? 'checked' : ''}><span class="ttrack"></span></label>`;
+  tr.insertCell().innerHTML = write
+    ? `<label class="toggle"><input type="checkbox" class="perm-cb" data-resource="${esc(id)}" data-mode="write" id="${prefix}-${safe}-write"><span class="ttrack"></span></label>`
+    : `<span style="font-size:11px;color:var(--text-3)">n/a</span>`;
+}
+
+// ── Lista paginada reutilizável ─────────────────────────────────────────────
+// pagedList(host, items, { placeholder, text: item→string p/ busca, sorts: {chave: {label, cmp}},
+//                          render(bodyEl, pageItems, api), extra?(el, api), afterRender?(api), size?, sizes? })
+function pagedList(host, items, opt) {
+  const sizes = opt.sizes || [10, 25, 50, 100];
+  const st = { q: '', sort: Object.keys(opt.sorts)[0], dir: 1, page: 0, size: opt.size || 25 };
+  host.innerHTML = `
+    <div class="pl-bar">
+      <input type="search" class="pl-q" placeholder="${esc(opt.placeholder || 'Filtrar por nome…')}" aria-label="${esc(opt.placeholder || 'Filtrar por nome')}">
+      <select class="pl-sort" aria-label="Ordenar por">${Object.entries(opt.sorts).map(([k, s]) => `<option value="${esc(k)}">${esc(s.label)}</option>`).join('')}</select>
+      <button type="button" class="btn btn-ghost btn-sm pl-dir" title="Inverter a ordem">↑ Crescente</button>
+      <span class="pl-extra"></span>
+    </div>
+    <div class="pl-body"></div>
+    <div class="pl-foot">
+      <label>Itens por página
+        <select class="pl-size" aria-label="Itens por página">${sizes.map(n => `<option ${n === st.size ? 'selected' : ''}>${n}</option>`).join('')}</select>
+      </label>
+      <span class="pl-info" aria-live="polite"></span>
+      <button type="button" class="btn btn-ghost btn-sm pl-prev">← Anterior</button>
+      <button type="button" class="btn btn-ghost btn-sm pl-next">Próximo →</button>
+    </div>`;
+  const $ = s => host.querySelector(s);
+  const filtered = () => {
+    const q = st.q.trim().toLowerCase();
+    const list = q ? items.filter(i => opt.text(i).toLowerCase().includes(q)) : items.slice();
+    const cmp = opt.sorts[st.sort].cmp;
+    return list.sort((a, b) => st.dir * cmp(a, b));
+  };
+  const self = { filtered, refresh: render, state: st, items };
+  function render() {
+    const list = filtered();
+    const pages = Math.max(1, Math.ceil(list.length / st.size));
+    st.page = Math.max(0, Math.min(st.page, pages - 1));
+    const from = st.page * st.size, slice = list.slice(from, from + st.size);
+    const body = $('.pl-body');
+    if (!slice.length) body.innerHTML = `<div class="pl-empty">${items.length ? 'Nenhuma tabela corresponde ao filtro.' : esc(opt.empty || 'Nada para mostrar.')}</div>`;
+    else opt.render(body, slice, self);
+    $('.pl-info').textContent = list.length
+      ? `${from + 1}–${from + slice.length} de ${list.length}${list.length !== items.length ? ` (filtrado de ${items.length})` : ''} · página ${st.page + 1}/${pages}`
+      : `0 de ${items.length}`;
+    $('.pl-prev').disabled = st.page === 0;
+    $('.pl-next').disabled = st.page >= pages - 1;
+    $('.pl-dir').textContent = st.dir === 1 ? '↑ Crescente' : '↓ Decrescente';
+    if (opt.afterRender) opt.afterRender(self);
+  }
+  $('.pl-q').addEventListener('input', e => { st.q = e.target.value; st.page = 0; render(); });
+  $('.pl-sort').addEventListener('change', e => { st.sort = e.target.value; st.page = 0; render(); });
+  $('.pl-dir').addEventListener('click', () => { st.dir *= -1; st.page = 0; render(); });
+  $('.pl-size').addEventListener('change', e => { st.size = parseInt(e.target.value); st.page = 0; render(); });
+  $('.pl-prev').addEventListener('click', () => { st.page--; render(); });
+  $('.pl-next').addEventListener('click', () => { st.page++; render(); });
+  if (opt.extra) opt.extra($('.pl-extra'), self);
+  render();
+  return self;
+}
+const _byName = (a, b) => a.table_name.localeCompare(b.table_name);
+
+async function buildPermMatrix(tbody, prefix, clientId) {
   tbody.innerHTML = '';
-  RESOURCES.forEach(r => {
-    const tr = tbody.insertRow();
-    tr.insertCell().textContent = r;
-    ['read','write'].forEach(mode => {
-      const td = tr.insertCell();
-      td.innerHTML = `<label class="toggle"><input type="checkbox" id="nkp-${r}-${mode}" ${mode === 'read' ? 'checked' : ''}><span class="ttrack"></span></label>`;
-    });
+  tbody._dynSel = new Set();  // seleção vive fora do DOM: sobrevive a paginação/filtro
+  let sep = tbody.insertRow(); sep.className = 'perm-sep'; sep.insertCell().colSpan = 3; sep.cells[0].textContent = 'Recursos ERP';
+  RESOURCES.forEach(r => _permRow(tbody, prefix, r, r, { checked: true }));
+  sep = tbody.insertRow(); sep.className = 'perm-sep'; sep.insertCell().colSpan = 3; sep.cells[0].textContent = 'Tabelas do banco (endpoints /api/v1/data)';
+  _permRow(tbody, prefix, '*', 'Todas as tabelas', { write: false, hint: 'Libera toda tabela mapeada, inclusive as futuras' });
+
+  // a lista paginada fica logo abaixo da tabela (host criado uma única vez)
+  const wrap = tbody.closest('table').parentElement;
+  let host = wrap.nextElementSibling;
+  if (!host || !host.classList.contains('perm-dyn')) { host = document.createElement('div'); host.className = 'perm-dyn'; wrap.after(host); }
+  host.innerHTML = '';
+  if (!clientId) return;
+
+  let tables = [];
+  try { tables = (await api(`/clients/${clientId}/exposed-tables`)).filter(t => t.enabled); } catch { /* sem tabelas ainda */ }
+  if (!tables.length) {
+    host.innerHTML = '<div class="pl-empty">Nenhuma tabela mapeada ainda — use "Todas as tabelas" ou aguarde o mapeamento.</div>';
+    return;
+  }
+  const sel = tbody._dynSel;
+  const star = tbody.querySelector('.perm-cb[data-resource="*"]');
+  const countTxt = () => `${sel.size} de ${tables.length} selecionadas`;
+  const list = pagedList(host, tables, {
+    placeholder: 'Filtrar tabelas por nome…',
+    text: t => t.table_name + ' ' + t.slug,
+    sorts: {
+      name:     { label: 'Nome', cmp: _byName },
+      selected: { label: 'Selecionadas primeiro', cmp: (a, b) => (sel.has(b.table_name) - sel.has(a.table_name)) || _byName(a, b) },
+      pk:       { label: 'Com chave primária primeiro', cmp: (a, b) => (!!b.pk_column - !!a.pk_column) || _byName(a, b) },
+    },
+    extra(el, l) {
+      el.innerHTML = `<span class="pl-count" style="font-size:12px;color:var(--text-2)"></span>
+        <button type="button" class="btn btn-ghost btn-sm pl-all">Marcar filtradas</button>
+        <button type="button" class="btn btn-ghost btn-sm pl-none">Desmarcar filtradas</button>`;
+      el.querySelector('.pl-all').onclick  = () => { l.filtered().forEach(t => sel.add(t.table_name)); l.refresh(); };
+      el.querySelector('.pl-none').onclick = () => { l.filtered().forEach(t => sel.delete(t.table_name)); l.refresh(); };
+    },
+    afterRender() {
+      host.querySelector('.pl-count').textContent = countTxt();
+      host.querySelector('.pl-body').classList.toggle('pl-dim', !!(star && star.checked));
+    },
+    render(body, page) {
+      body.innerHTML = `<table class="perm-table"><thead><tr><th>Tabela</th><th style="width:90px">Leitura</th></tr></thead><tbody>${
+        page.map(t => `<tr><td>${esc(t.table_name)}<div style="font-size:11px;color:var(--text-3)">/api/v1/data/${esc(t.slug)}${t.pk_column ? ' · PK ' + esc(t.pk_column) : ''}</div></td>
+          <td><label class="toggle"><input type="checkbox" data-table="${esc(t.table_name)}" aria-label="Leitura em ${esc(t.table_name)}" ${sel.has(t.table_name) ? 'checked' : ''}><span class="ttrack"></span></label></td></tr>`).join('')
+      }</tbody></table>`;
+      body.querySelectorAll('input[data-table]').forEach(cb => cb.onchange = () => {
+        if (cb.checked) sel.add(cb.dataset.table); else sel.delete(cb.dataset.table);
+        host.querySelector('.pl-count').textContent = countTxt();
+      });
+    },
   });
+  // "Todas as tabelas" torna a lista individual redundante
+  if (star) star.addEventListener('change', () => list.refresh());
+}
+
+function collectPerms(tbody) {
+  const scopes = {};
+  tbody.querySelectorAll('.perm-cb').forEach(cb => {
+    const r = cb.dataset.resource;
+    scopes[r] ??= { read: false, write: false };
+    if (cb.checked) scopes[r][cb.dataset.mode] = true;
+  });
+  // não envia recursos totalmente desmarcados
+  Object.keys(scopes).forEach(r => { if (!scopes[r].read && !scopes[r].write) delete scopes[r]; });
+  // tabelas individuais só importam se "Todas as tabelas" não estiver marcada
+  if (!scopes['*']) (tbody._dynSel || new Set()).forEach(t => { scopes[`dyn:${t}`] = { read: true, write: false }; });
+  return scopes;
+}
+
+async function buildNewKeyPerms(clientId) {
+  await buildPermMatrix(document.getElementById('new-key-perms-body'), 'nkp', clientId);
 }
 
 async function createKey() {
   if (!currentClientId) return;
   const name = document.getElementById('key-name').value.trim();
   if (!name) { toast('Informe um nome para a key', 'err'); return; }
-  const scopes = {};
-  RESOURCES.forEach(r => {
-    scopes[r] = {
-      read:  document.getElementById(`nkp-${r}-read`)?.checked  ?? false,
-      write: document.getElementById(`nkp-${r}-write`)?.checked ?? false,
-    };
-  });
+  const scopes = collectPerms(document.getElementById('new-key-perms-body'));
+  if (!Object.keys(scopes).length) { toast('Marque ao menos uma permissão', 'err'); return; }
   const expiresIn = document.getElementById('key-expires').value;
   const fd = new FormData();
   fd.append('name', name);
@@ -1396,16 +2030,8 @@ function copyKey(elId) {
 let ncCurrentStep = 1;
 
 function buildNcPerms() {
-  const tbody = document.getElementById('nc-perms-body');
-  tbody.innerHTML = '';
-  RESOURCES.forEach(r => {
-    const tr = tbody.insertRow();
-    tr.insertCell().textContent = r;
-    ['read','write'].forEach(mode => {
-      const td = tr.insertCell();
-      td.innerHTML = `<label class="toggle"><input type="checkbox" id="ncp-${r}-${mode}" ${mode === 'read' ? 'checked' : ''}><span class="ttrack"></span></label>`;
-    });
-  });
+  // cliente ainda não existe → sem tabelas; oferece só ERP + "Todas as tabelas"
+  buildPermMatrix(document.getElementById('nc-perms-body'), 'ncp', null);
 }
 
 function openNewClientModal() {
@@ -1458,15 +2084,11 @@ async function submitNewClient() {
   const file    = document.getElementById('nc-file').files[0];
   const keyName = document.getElementById('nc-key-name').value.trim() || 'default';
   if (!name || !slug || !file) { toast('Preencha todos os campos', 'err'); return; }
-  const scopes = {};
-  RESOURCES.forEach(r => {
-    scopes[r] = {
-      read:  document.getElementById(`ncp-${r}-read`)?.checked  ?? false,
-      write: document.getElementById(`ncp-${r}-write`)?.checked ?? false,
-    };
-  });
+  const scopes = collectPerms(document.getElementById('nc-perms-body'));
   const fd = new FormData();
   fd.append('name', name); fd.append('slug', slug); fd.append('confrede_file', file);
+  const btn = document.querySelector('#sp-4 .btn-primary');
+  btn.disabled = true; btn.textContent = 'Testando conexão…';
   try {
     const r1 = await fetch(`${API}/clients`, { method: 'POST', body: fd });
     if (!r1.ok) { const b = await r1.json(); throw new Error(b.detail || 'Erro ao criar cliente'); }
@@ -1478,8 +2100,18 @@ async function submitNewClient() {
     const key = await r2.json();
     document.getElementById('nc-result-key').textContent = key.full_key;
     document.getElementById('nc-docs-link').href = `/docs/${encodeURIComponent(slug)}`;
+    const bar = document.getElementById('nc-mapping');
+    bar.innerHTML = pbarHtml(client.mapping || { status: 'running', progress: 0, step: 'Na fila' });
+    pollMapping(client.id, s => {
+      bar.innerHTML = pbarHtml(s);
+      if (s.status !== 'running') document.getElementById('nc-map-spin').style.display = 'none';
+      const row = document.querySelector(`#clients-body [data-map-client="${client.id}"]`);
+      if (row) row.innerHTML = pbarHtml(s);
+    });
+    loadClients();
     ncStep(5);
   } catch (e) { toast(e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Criar cliente'; }
 }
 
 // ── Metrics ────────────────────────────────────────────────────────────────
@@ -1497,6 +2129,19 @@ async function loadMetrics() {
       tr.insertCell().textContent = r.count;
     });
     if (!tbody.rows.length) tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Sem dados</td></tr>';
+    const tcBody = document.getElementById('m-top-clients');
+    tcBody.innerHTML = '';
+    (m.top_clients || []).filter(c => c.id != null).forEach((c, i) => {
+      const tr = tcBody.insertRow();
+      const rank = tr.insertCell();
+      rank.textContent = `#${i + 1}`;
+      rank.style.cssText = 'color:var(--text-3);width:28px;font-family:var(--mono);font-size:11px';
+      tr.insertCell().textContent = c.name || `#${c.id}`;
+      const cnt = tr.insertCell();
+      cnt.textContent = c.count;
+      cnt.style.cssText = 'text-align:right;color:var(--accent-hi);font-family:var(--mono);font-size:12px';
+    });
+    if (!tcBody.rows.length) tcBody.innerHTML = '<tr><td colspan="3" class="empty-state">Sem dados</td></tr>';
   } catch (e) { toast('Erro métricas: ' + e.message, 'err'); }
 }
 
@@ -1874,6 +2519,418 @@ async function submitNewConnector() {
   } catch (e) { toast(e.message, 'err'); }
 }
 
+// ── AI Chat — conversas isoladas (máx. 5), estado fora do DOM ─────────────
+// Cada conversa: {id, title, clientId, clientName, keyId, keyLabel, history[], messages[]}.
+// history = pares user/assistant enviados à IA; messages = o que é renderizado.
+const CHAT_MAX = 5, CHAT_MSG_MAX = 40, CHAT_ROWS_MAX = 50, CHAT_LS = 'anexar_chats';
+let _chats = [], _activeChatId = null, _chartCount = 0, _iaClients = null;
+
+function _chatSave() {
+  try { localStorage.setItem(CHAT_LS, JSON.stringify({ chats: _chats, active: _activeChatId })); } catch {}
+}
+function _chatLoad() {
+  try {
+    const s = JSON.parse(localStorage.getItem(CHAT_LS) || 'null');
+    if (s && Array.isArray(s.chats)) { _chats = s.chats.slice(0, CHAT_MAX); _activeChatId = s.active; }
+  } catch {}
+}
+const activeChat = () => _chats.find(c => c.id === _activeChatId) || null;
+
+function _newChatObj() {
+  return { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: 'Nova conversa',
+           clientId: null, clientName: '', keyId: null, keyLabel: '', history: [], messages: [], createdAt: Date.now() };
+}
+
+async function initAIChat() {
+  if (!_iaClients) {
+    try { _iaClients = (await api('/clients?limit=100')).clients || []; }
+    catch (e) { toast('Erro ao carregar clientes: ' + e.message, 'err'); _iaClients = []; }
+  }
+  if (!_chats.length) _chatLoad();
+  if (!_chats.length) { _chats.push(_newChatObj()); _activeChatId = _chats[0].id; }
+  if (!activeChat()) _activeChatId = _chats[0].id;
+  renderChatList();
+  await renderChatMain();
+}
+
+function newChat() {
+  if (_chats.length >= CHAT_MAX) { toast(`Máximo de ${CHAT_MAX} conversas — apague uma para abrir outra`, 'warn'); return; }
+  const c = _newChatObj();
+  _chats.unshift(c); _activeChatId = c.id; _chatSave();
+  renderChatList(); renderChatMain();
+}
+
+function deleteChat(id, ev) {
+  ev?.stopPropagation();
+  const c = _chats.find(x => x.id === id);
+  if (c && c.messages.length && !confirm('Apagar esta conversa? O contexto dela será perdido.')) return;
+  _chats = _chats.filter(x => x.id !== id);
+  if (_activeChatId === id) _activeChatId = _chats[0]?.id || null;
+  if (!_chats.length) { _chats.push(_newChatObj()); _activeChatId = _chats[0].id; }
+  _chatSave(); renderChatList(); renderChatMain();
+}
+
+function selectChat(id) {
+  if (id === _activeChatId) return;
+  _activeChatId = id; _chatSave();
+  renderChatList(); renderChatMain();
+}
+
+function renderChatList() {
+  const box = document.getElementById('ia-chat-items');
+  box.innerHTML = '';
+  _chats.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'chat-item' + (c.id === _activeChatId ? ' active' : '');
+    d.setAttribute('role', 'listitem'); d.tabIndex = 0;
+    d.innerHTML = `<div class="ci-body"><div class="ci-title" title="${esc(c.title)}">${esc(c.title)}</div>
+      <div class="ci-sub">${esc(c.clientName || 'sem cliente')}${c.keyLabel ? ' · ' + esc(c.keyLabel) : ''}${c.messages.length ? ' · ' + c.messages.length / 2 + ' perg.' : ''}</div></div>
+      <button class="ci-x" aria-label="Apagar conversa" title="Apagar">×</button>`;
+    d.onclick = () => selectChat(c.id);
+    d.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectChat(c.id); } };
+    d.querySelector('.ci-x').onclick = ev => deleteChat(c.id, ev);
+    box.appendChild(d);
+  });
+  document.getElementById('ia-chat-count').textContent = `${_chats.length}/${CHAT_MAX} conversas`;
+  document.getElementById('ia-new-btn').disabled = _chats.length >= CHAT_MAX;
+}
+
+async function renderChatMain() {
+  const chat = activeChat(); if (!chat) return;
+  const locked = chat.messages.length > 0;
+  const sel = document.getElementById('ia-client-select');
+  sel.innerHTML = '<option value="">Selecione o cliente</option>';
+  (_iaClients || []).forEach(c => {
+    const o = document.createElement('option'); o.value = c.id; o.textContent = `${c.name} (#${c.id})`; sel.appendChild(o);
+  });
+  sel.value = chat.clientId ?? '';
+  sel.disabled = locked;
+  document.getElementById('ia-sync-btn').disabled = !chat.clientId;
+  document.getElementById('ia-lock-hint').style.display = locked ? 'none' : '';
+  checkContextStatus(chat.clientId);
+  await _loadKeysFor(chat, locked);
+  // mensagens
+  const box = document.getElementById('ia-messages');
+  box.innerHTML = '';
+  if (!chat.messages.length) {
+    box.innerHTML = `<div class="chat-empty"><div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:6px">Nova conversa</div>
+      Escolha o cliente e a API key acima e faça uma pergunta. A IA vai escolher os endpoints permitidos para essa key e responder com base neles.</div>`;
+  } else {
+    chat.messages.forEach(m => m.role === 'user' ? _aiUserMsg(m.text) : _aiAssistantMsg(m.res));
+  }
+  document.getElementById('ia-input').focus();
+}
+
+async function _loadKeysFor(chat, locked) {
+  const keySel = document.getElementById('ia-key-select');
+  keySel.innerHTML = '<option value="">Selecione a API key</option>';
+  keySel.disabled = true;
+  if (!chat.clientId) return;
+  try {
+    const keys = await api(`/clients/${chat.clientId}/keys`);
+    const active = keys.filter(k => k.status === 'active' && !(k.expires_at && new Date(k.expires_at) < Date.now()));
+    active.forEach(k => {
+      const o = document.createElement('option'); o.value = k.id; o.textContent = `${k.name} (${k.prefix})`; keySel.appendChild(o);
+    });
+    if (chat.keyId && active.some(k => k.id == chat.keyId)) keySel.value = chat.keyId;
+    else if (active.length === 1) { keySel.value = active[0].id; onIaKeyChange(active[0].id); }
+    else if (chat.keyId) { chat.keyId = null; chat.keyLabel = ''; _chatSave(); }
+    keySel.disabled = locked;
+    if (!active.length) toast('Este cliente não tem API key ativa — gere uma em Clientes → Gerenciar keys', 'warn');
+  } catch (e) { toast('Erro ao carregar keys: ' + e.message, 'err'); }
+}
+
+function onIaClientChange(clientId) {
+  const chat = activeChat(); if (!chat || chat.messages.length) return;
+  chat.clientId = clientId ? parseInt(clientId) : null;
+  chat.clientName = (_iaClients || []).find(c => c.id == clientId)?.name || '';
+  chat.keyId = null; chat.keyLabel = '';
+  document.getElementById('ia-sync-btn').disabled = !clientId;
+  checkContextStatus(clientId);
+  _loadKeysFor(chat, false);
+  _chatSave(); renderChatList();
+}
+
+function onIaKeyChange(keyId) {
+  const chat = activeChat(); if (!chat || chat.messages.length) return;
+  const sel = document.getElementById('ia-key-select');
+  chat.keyId = keyId ? parseInt(keyId) : null;
+  chat.keyLabel = keyId ? (sel.options[sel.selectedIndex]?.textContent || '').split(' (')[0] : '';
+  _chatSave(); renderChatList();
+}
+
+// ── Schema Context Enrichment ──────────────────────────────────────────────
+
+async function checkContextStatus(clientId) {
+  if (!clientId) {
+    document.getElementById('ia-ctx-badge').textContent = 'Selecione um cliente';
+    document.getElementById('ia-ctx-badge').className = 'badge b-warn';
+    document.getElementById('ia-enrich-btn').disabled = true;
+    return;
+  }
+  try {
+    const r = await fetch(`/admin/api/clients/${clientId}/schema/context`, {
+      headers: {'Cookie': `admin_token=${sessionStorage.admin_token}`}
+    });
+    if (r.ok) {
+      const ctx = await r.json();
+      const count = Object.keys(ctx).length - 1; // exclude _generated_at
+      document.getElementById('ia-ctx-badge').textContent = `Contexto ativo (${count} tabelas)`;
+      document.getElementById('ia-ctx-badge').className = 'badge b-ok';
+    } else {
+      document.getElementById('ia-ctx-badge').textContent = 'Sem contexto';
+      document.getElementById('ia-ctx-badge').className = 'badge b-warn';
+    }
+    document.getElementById('ia-enrich-btn').disabled = false;
+  } catch (e) {
+    document.getElementById('ia-ctx-badge').textContent = 'Erro ao verificar';
+    document.getElementById('ia-ctx-badge').className = 'badge b-err';
+  }
+}
+
+async function startEnrichContext() {
+  const clientId = document.getElementById('ia-client-select').value;
+  if (!clientId) { toast('Selecione um cliente primeiro', 'warn'); return; }
+
+  const modal = document.getElementById('enrich-context-modal');
+  modal.style.display = 'flex';
+  document.getElementById('enrich-loading').style.display = 'block';
+  document.getElementById('enrich-content').style.display = 'none';
+  document.getElementById('enrich-error').style.display = 'none';
+  document.getElementById('enrich-save-btn').disabled = true;
+
+  try {
+    const r = await fetch(`/admin/api/clients/${clientId}/schema/enrich`, {
+      method: 'POST',
+      headers: {'Cookie': `admin_token=${sessionStorage.admin_token}`}
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || `HTTP ${r.status}`);
+    }
+    const result = await r.json();
+    window._enrich_draft = result.context;
+
+    // Render draft tables
+    const list = document.getElementById('enrich-tables-list');
+    list.innerHTML = '';
+    for (const [table, data] of Object.entries(result.context)) {
+      const div = document.createElement('div');
+      div.style.cssText = 'border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;background:var(--elevated)';
+      const purpose = esc((data.purpose || 'Não definido').substring(0, 100));
+      const joins = Object.keys(data.joins || {}).length;
+      const filters = Object.keys(data.filters || {}).length;
+      const cols = Object.keys(data.columns || {}).length;
+      div.innerHTML = `
+        <div style="font-weight:500;font-size:13px;margin-bottom:6px">${esc(table)}</div>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:8px">${purpose}</div>
+        <div style="display:flex;gap:12px;font-size:11px;color:var(--text-3)">
+          <span>Joins: ${joins}</span>
+          <span>Filters: ${filters}</span>
+          <span>Cols: ${cols}</span>
+        </div>
+        <details style="margin-top:8px;font-size:11px"><summary style="cursor:pointer;color:var(--accent)">Detalhes (JSON)</summary>
+          <pre style="background:var(--surface);padding:8px;border-radius:var(--r-sm);overflow-x:auto;margin-top:6px;font-size:10px">${esc(JSON.stringify(data, null, 2))}</pre>
+        </details>
+      `;
+      list.appendChild(div);
+    }
+
+    document.getElementById('enrich-loading').style.display = 'none';
+    document.getElementById('enrich-content').style.display = 'block';
+    document.getElementById('enrich-save-btn').disabled = false;
+  } catch (e) {
+    document.getElementById('enrich-loading').style.display = 'none';
+    document.getElementById('enrich-error').style.display = 'block';
+    document.getElementById('enrich-error').textContent = 'Erro: ' + e.message;
+  }
+}
+
+async function saveEnrichedContext() {
+  const clientId = document.getElementById('ia-client-select').value;
+  if (!clientId || !window._enrich_draft) return;
+
+  try {
+    const r = await fetch(`/admin/api/clients/${clientId}/schema/context`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': `admin_token=${sessionStorage.admin_token}`
+      },
+      body: JSON.stringify({ context: window._enrich_draft })
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || `HTTP ${r.status}`);
+    }
+    toast(`Contexto salvo (${Object.keys(window._enrich_draft).length} tabelas)`, 'ok');
+    closeEnrichModal();
+    checkContextStatus(clientId);
+  } catch (e) {
+    toast('Erro ao salvar: ' + e.message, 'err');
+  }
+}
+
+function closeEnrichModal() {
+  document.getElementById('enrich-context-modal').style.display = 'none';
+  window._enrich_draft = null;
+}
+
+function _aiUserMsg(text) {
+  const box = document.getElementById('ia-messages');
+  const d = document.createElement('div');
+  d.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;margin-bottom:10px';
+  d.innerHTML = `
+    <div style="max-width:75%;background:var(--accent-dim);border:1px solid var(--accent);border-radius:10px 10px 2px 10px;padding:9px 13px;font-size:13px;line-height:1.55">${esc(text)}</div>
+    <div style="font-size:11px;color:var(--text-3);margin-top:3px;padding:0 4px">Você</div>`;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function _aiAssistantMsg(res) {
+  const box = document.getElementById('ia-messages');
+  const cid  = `chart-${++_chartCount}`;
+  const cols  = res.columns || (res.data && res.data.length ? Object.keys(res.data[0]) : []);
+
+  // Narrative text
+  let html = `<div style="background:var(--elevated);border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:12px 14px;font-size:13px;line-height:1.65;white-space:pre-wrap">${esc(res.answer)}</div>`;
+
+  // Chart placeholder
+  if (res.chart_type && res.data && res.data.length) {
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:8px"><canvas id="${cid}" style="max-height:260px"></canvas></div>`;
+  }
+
+  // Collapsible data table
+  if (res.data && res.data.length && cols.length) {
+    const rows = res.data.slice(0, 50).map(row =>
+      `<tr>${cols.map(c => `<td style="padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px">${esc(String(row[c] ?? ''))}</td>`).join('')}</tr>`
+    ).join('');
+    html += `<details style="margin-top:8px">
+      <summary style="font-size:12px;color:var(--text-2);cursor:pointer;user-select:none;padding:4px 2px">
+        ${res.total} registro(s) — ver dados completos
+      </summary>
+      <div style="overflow-x:auto;margin-top:6px;border:1px solid var(--border);border-radius:var(--r-sm)">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>${cols.map(c => `<th style="text-align:left;padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-2);font-weight:500">${esc(c)}</th>`).join('')}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </details>`;
+  }
+
+  const via = (res.endpoints || []).length
+    ? ` · via ${res.endpoints.map(p => `<code style="font-size:10.5px">${esc(p)}</code>`).join(', ')}`
+    : '';
+  const warn = (res.warnings || []).length ? `<div style="font-size:11px;color:var(--warn);margin-top:4px">${esc(res.warnings.join(' · '))}</div>` : '';
+  const d = document.createElement('div');
+  d.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;margin-bottom:10px;max-width:92%';
+  d.innerHTML = `<div style="width:100%">${html}${warn}</div><div style="font-size:11px;color:var(--text-3);margin-top:4px;padding:0 2px">Análise IA${via}</div>`;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+
+  // Render chart after DOM paint
+  if (res.chart_type && res.data && res.data.length && cols.length) {
+    requestAnimationFrame(() => _renderChart(cid, res.chart_type, res.data, cols));
+  }
+}
+
+function _renderChart(canvasId, type, data, cols) {
+  if (!window.Chart) return;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const labelCol = cols[0];
+  const valueCol = cols[cols.length - 1];
+  const slice    = data.slice(0, 20);
+  const labels   = slice.map(r => String(r[labelCol] || '').slice(0, 28));
+  const values   = slice.map(r => parseFloat(r[valueCol]) || 0);
+  const palette  = ['#5e6ad2','#22c55e','#f59e0b','#ef4444','#06b6d4','#a78bfa','#fb923c','#34d399'];
+
+  new Chart(canvas, {
+    type: type === 'pie' ? 'pie' : type === 'line' ? 'line' : 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: valueCol,
+        data: values,
+        backgroundColor: type === 'pie' ? labels.map((_, i) => palette[i % palette.length]) : '#5e6ad2',
+        borderColor: type === 'line' ? '#5e6ad2' : undefined,
+        borderWidth: type === 'bar' ? 0 : 2,
+        borderRadius: type === 'bar' ? 4 : 0,
+        tension: 0.35,
+        fill: type === 'line',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: type === 'pie', labels: { color: '#9090a0', boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y ?? ctx.parsed}` } },
+      },
+      scales: type !== 'pie' ? {
+        x: { ticks: { color: '#9090a0', maxRotation: 40 }, grid: { color: '#26262e' } },
+        y: { ticks: { color: '#9090a0' }, grid: { color: '#26262e' } },
+      } : undefined,
+    }
+  });
+}
+
+// Resposta é gravada na conversa que a originou, mesmo se o usuário trocar de conversa/aba enquanto espera.
+function _chatPush(chat, msg) {
+  chat.messages.push(msg);
+  if (chat.messages.length > CHAT_MSG_MAX) chat.messages.splice(0, chat.messages.length - CHAT_MSG_MAX);
+  if (chat.history.length > 16) chat.history.splice(0, chat.history.length - 16);
+  _chatSave();
+}
+
+async function sendAIChat() {
+  const chat = activeChat(); if (!chat) return;
+  const input = document.getElementById('ia-input');
+  const btn   = document.getElementById('ia-send-btn');
+  const query = input.value.trim();
+  if (!query) return;
+  if (!chat.clientId || !chat.keyId) { toast('Selecione cliente e API key antes de perguntar', 'warn'); return; }
+
+  if (!chat.messages.length) {
+    chat.title = query.length > 42 ? query.slice(0, 42) + '…' : query;
+    document.getElementById('ia-messages').innerHTML = '';
+    document.getElementById('ia-client-select').disabled = true;
+    document.getElementById('ia-key-select').disabled = true;
+    document.getElementById('ia-lock-hint').style.display = 'none';
+  }
+  _chatPush(chat, { role: 'user', text: query });
+  _aiUserMsg(query);
+  renderChatList();
+  input.value = '';
+  btn.disabled = true;
+
+  const box = document.getElementById('ia-messages');
+  const thinking = document.createElement('div');
+  thinking.style.cssText = 'display:flex;align-items:center;gap:6px;color:var(--text-3);font-size:12px;padding:6px 2px;margin-bottom:10px';
+  thinking.innerHTML = '<div class="spinner"></div> Escolhendo endpoints e consultando…';
+  box.appendChild(thinking);
+  box.scrollTop = box.scrollHeight;
+
+  let res;
+  try {
+    res = await api('/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, history: chat.history.slice(-8), api_key_id: chat.keyId }),
+    });
+    chat.history.push({ role: 'user', content: query }, { role: 'assistant', content: res.answer });
+  } catch (e) {
+    res = { answer: `Erro: ${e.message}`, data: [], columns: [], total: 0 };
+  } finally {
+    thinking.remove();
+    btn.disabled = false;
+  }
+  // mantém o cache leve: só as primeiras linhas ficam persistidas
+  const stored = { ...res, data: (res.data || []).slice(0, CHAT_ROWS_MAX) };
+  _chatPush(chat, { role: 'assistant', res: stored });
+  if (chat.id === _activeChatId) { _aiAssistantMsg(res); input.focus(); }
+  else toast(`Resposta pronta em "${chat.title}"`, 'info');
+}
+
 // ── Keyboard ───────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -1885,6 +2942,200 @@ document.addEventListener('keydown', e => {
 document.querySelectorAll('.backdrop').forEach(bd => {
   bd.addEventListener('click', e => { if (e.target === bd) bd.classList.remove('open'); });
 });
+
+// ── Toast notification ─────────────────────────────────────────────────────
+function showToast(msg, type='ok') {
+  // Map legacy type names to toast() convention
+  const map = { ok:'ok', error:'err', err:'err', warn:'warn', info:'info' };
+  toast(msg, map[type] || 'ok');
+}
+
+// ── Badge de mapeamento no chat ────────────────────────────────────────────
+async function checkContextStatus(clientId) {
+  const badge = document.getElementById('ia-ctx-badge');
+  const bar = document.getElementById('ia-mapping');
+  const set = (cls, txt) => { badge.className = `badge ${cls}`; badge.textContent = txt; };
+  if (!clientId) { set('b-warn', 'Selecione um cliente'); bar.style.display = 'none'; return; }
+  try {
+    const st = await api(`/clients/${clientId}/mapping`);
+    const ts = st.updated_at ? ' · ' + new Date(st.updated_at).toLocaleDateString('pt-BR') : '';
+    if (st.status === 'ok')          { set('b-ok',   'Mapeamento ativo' + ts); bar.style.display = 'none'; }
+    else if (st.status === 'running'){ set('b-warn', 'Mapeando…'); bar.style.display = ''; bar.innerHTML = pbarHtml(st); pollMapping(clientId, s => { bar.innerHTML = pbarHtml(s); if (s.status !== 'running') checkContextStatus(clientId); }); }
+    else if (st.status === 'error')  { set('b-err',  'Mapeamento falhou'); bar.style.display = ''; bar.innerHTML = pbarHtml(st); }
+    else                             { set('b-warn', 'Sem mapeamento — clique em Sincronizar'); bar.style.display = 'none'; }
+  } catch { set('b-err', 'Status indisponível'); }
+}
+
+// ── Endpoints view ─────────────────────────────────────────────────────────
+let _epList = null, _epTables = [];
+
+async function loadEndpointsView(clientId) {
+  const container = document.getElementById('ep-table-list');
+  _epList = null;
+  if (!clientId) { container.innerHTML = ''; return; }
+  container.innerHTML = `
+    <div aria-busy="true" style="display:flex;flex-direction:column;gap:8px">
+      ${[1,2].map(()=>`<div style="height:64px;background:var(--elevated);border-radius:var(--r-sm);border:1px solid var(--border);animation:pulse 1.4s ease-in-out infinite"></div>`).join('')}
+    </div>`;
+  try {
+    _epTables = await api(`/clients/${clientId}/exposed-tables`);
+    if (!_epTables.length) {
+      container.innerHTML = `
+        <div role="status" class="pl-empty" style="padding:32px 16px">
+          <div style="font-size:13px;font-weight:500;color:var(--text)">Nenhuma tabela exposta</div>
+          <div style="font-size:12px;margin-top:4px">Sincronize o mapeamento do cliente ou clique em <strong>+ Expor Tabela</strong>.</div>
+        </div>`;
+      return;
+    }
+    _epList = pagedList(container, _epTables, {
+      placeholder: 'Filtrar por nome da tabela ou slug…',
+      text: t => t.table_name + ' ' + t.slug,
+      sorts: {
+        name:   { label: 'Nome', cmp: _byName },
+        status: { label: 'Ativas primeiro', cmp: (a, b) => (b.enabled - a.enabled) || _byName(a, b) },
+        pk:     { label: 'Com chave primária primeiro', cmp: (a, b) => (!!b.pk_column - !!a.pk_column) || _byName(a, b) },
+        recent: { label: 'Mais recentes primeiro', cmp: (a, b) => String(b.created_at).localeCompare(String(a.created_at)) || _byName(a, b) },
+      },
+      extra(el) { el.innerHTML = '<span class="ep-count" style="font-size:12px;color:var(--text-2)"></span>'; },
+      afterRender() {
+        const on = _epTables.filter(t => t.enabled).length;
+        container.querySelector('.ep-count').textContent = `${on} ativas · ${_epTables.length - on} inativas`;
+      },
+      render(body, page) {
+        body.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">${page.map(t => {
+          const colsText = t.columns && t.columns.length
+            ? `${t.columns.length} colunas: ${t.columns.slice(0,4).join(', ')}${t.columns.length>4?'…':''}` : 'Todas as colunas';
+          return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--elevated);border-radius:var(--r-sm);border:1px solid var(--border)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px">${esc(t.table_name)}
+                <a href="/docs" target="_blank" rel="noopener" title="Abrir Swagger" style="color:var(--accent);font-size:10px;text-decoration:none;font-weight:400;white-space:nowrap">↗ Swagger</a></div>
+              <div style="font-size:11px;color:var(--text-2);margin-top:2px">
+                <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:10px">/api/v1/data/${esc(t.slug)}</code>
+                ${t.pk_column ? `<span style="margin-left:6px">· PK: <code style="font-size:10px">${esc(t.pk_column)}</code></span>` : ''}</div>
+              <div style="font-size:10px;color:var(--text-3);margin-top:3px">${esc(colsText)}</div>
+            </div>
+            <span class="badge ${t.enabled ? 'b-ok' : 'b-err'}" style="flex-shrink:0">${t.enabled ? 'Ativo' : 'Inativo'}</span>
+            <button class="btn btn-ghost btn-sm ep-toggle-btn" data-table="${esc(t.table_name)}" style="flex-shrink:0">${t.enabled ? 'Desabilitar' : 'Habilitar'}</button>
+          </div>`; }).join('')}</div>`;
+        body.querySelectorAll('.ep-toggle-btn').forEach(btn => btn.addEventListener('click', () => {
+          const t = _epTables.find(x => x.table_name === btn.dataset.table);
+          toggleEndpoint(clientId, t.table_name, !t.enabled);
+        }));
+      },
+    });
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--err);font-size:13px">Erro: ${esc(e.message)}</div>`;
+  }
+}
+
+async function toggleEndpoint(clientId, tableName, enabled) {
+  try {
+    await api(`/clients/${clientId}/exposed-tables/${encodeURIComponent(tableName)}`, {
+      method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enabled })
+    });
+  } catch(e) { toast(`Erro ao ${enabled?'ativar':'desativar'} tabela: ${e.message}`, 'err'); return; }
+  // atualiza o item no lugar: mantém página, filtro e ordenação
+  const t = _epTables.find(x => x.table_name === tableName);
+  if (t) t.enabled = enabled ? 1 : 0;
+  if (_epList) _epList.refresh(); else loadEndpointsView(clientId);
+  toast(`${tableName} ${enabled ? 'habilitada' : 'desabilitada'}`, 'ok');
+}
+
+function openExposeModal() {
+  const clientId = document.getElementById('ep-client-select').value;
+  if (!clientId) { alert('Selecione um cliente primeiro.'); return; }
+  fetch(`/admin/api/clients/${clientId}/schema/tables`).then(r => r.json()).then(data => {
+    const sel = document.getElementById('expose-table-name');
+    sel.innerHTML = '<option value="">Selecione a tabela...</option>';
+    (data.tables || []).forEach(t => {
+      const o = document.createElement('option');
+      o.value = t.name;
+      o.textContent = t.name;
+      sel.appendChild(o);
+    });
+  }).catch(() => {});
+  document.getElementById('expose-slug').value = '';
+  document.getElementById('expose-pk').value = '';
+  document.getElementById('expose-cols-section').style.display = 'none';
+  document.getElementById('expose-cols-list').innerHTML = '<span style="color:var(--muted);font-size:12px">Selecione uma tabela...</span>';
+  document.getElementById('expose-table-modal').style.display = 'flex';
+  document.getElementById('expose-table-modal').classList.add('open');
+}
+
+async function loadExposeColumns(tableName) {
+  const section = document.getElementById('expose-cols-section');
+  const list = document.getElementById('expose-cols-list');
+  if (!tableName) { section.style.display = 'none'; return; }
+  // Auto-fill slug from table name
+  const slugEl = document.getElementById('expose-slug');
+  if (!slugEl.value) slugEl.value = tableName.toLowerCase().replace(/_/g, '-');
+  section.style.display = '';
+  list.innerHTML = '<span style="color:var(--muted);font-size:12px">Carregando colunas...</span>';
+  const clientId = document.getElementById('ep-client-select').value;
+  try {
+    const r = await fetch(`/admin/api/clients/${clientId}/schema/columns?table=${encodeURIComponent(tableName)}`);
+    const data = await r.json();
+    const cols = data.columns || [];
+    if (!cols.length) { list.innerHTML = '<span style="color:var(--muted);font-size:12px">Nenhuma coluna encontrada</span>'; return; }
+    list.innerHTML = cols.map(c => {
+      const name = c.name || c;
+      const type = c.type ? ` <span style="color:var(--muted);font-size:10px">${c.type}</span>` : '';
+      return `<label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+        <input type="checkbox" class="col-cb" value="${name}" checked style="accent-color:var(--accent)">
+        <span style="color:var(--text)">${name}</span>${type}
+      </label>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<span style="color:var(--danger);font-size:12px">Erro ao carregar colunas</span>';
+  }
+}
+
+function toggleAllCols(checked) {
+  document.querySelectorAll('.col-cb').forEach(cb => cb.checked = checked);
+}
+
+async function submitExposeTable() {
+  const clientId = document.getElementById('ep-client-select').value;
+  const tableName = document.getElementById('expose-table-name').value;
+  const slug = document.getElementById('expose-slug').value.trim().toLowerCase();
+  const pk = document.getElementById('expose-pk').value.trim() || null;
+  if (!tableName || !slug) { alert('Tabela e slug são obrigatórios.'); return; }
+
+  // Collect checked columns; empty array = all columns
+  const allCbs = [...document.querySelectorAll('.col-cb')];
+  const checkedCbs = allCbs.filter(cb => cb.checked).map(cb => cb.value);
+  // If all are checked (or none exist), send empty array to mean "all"
+  const columns = (allCbs.length > 0 && checkedCbs.length < allCbs.length) ? checkedCbs : [];
+
+  const r = await fetch(`/admin/api/clients/${clientId}/exposed-tables`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ table_name: tableName, slug, pk_column: pk, columns, enabled: true })
+  });
+  if (r.ok) {
+    document.getElementById('expose-table-modal').classList.remove('open');
+    document.getElementById('expose-table-modal').style.display = '';
+    loadEndpointsView(clientId);
+    const colInfo = columns.length ? ` (${columns.length} colunas)` : ' (todas as colunas)';
+    showToast(`Tabela ${tableName} exposta em /api/v1/data/${slug}${colInfo}`);
+  } else {
+    const e = await r.json();
+    alert('Erro: ' + (e.detail || 'desconhecido'));
+  }
+}
+
+// Populate endpoints client selector when clients are loaded
+function _populateEpClientSelector() {
+  const sel = document.getElementById('ep-client-select');
+  if (sel.options.length <= 1 && typeof clientsCache !== 'undefined' && clientsCache) {
+    clientsCache.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = `${c.name} (#${c.id})`;
+      sel.appendChild(o);
+    });
+  }
+}
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 initTheme();
