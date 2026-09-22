@@ -122,6 +122,38 @@ def get_client_all_scopes(client_id: int) -> Dict[str, Dict[str, bool]]:
     finally:
         conn.close()
 
+def update_client(client_id: int, name: Optional[str] = None, slug: Optional[str] = None, status: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Update client details."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM clients WHERE id = ?", (client_id,))
+        if not cur.fetchone():
+            return None
+
+        updates = []
+        values = []
+        if name is not None:
+            updates.append("name = ?")
+            values.append(name)
+        if slug is not None:
+            updates.append("slug = ?")
+            values.append(slug)
+        if status is not None:
+            updates.append("status = ?")
+            values.append(status)
+
+        if not updates:
+            return get_client(client_id)
+
+        values.append(client_id)
+        query = f"UPDATE clients SET {', '.join(updates)} WHERE id = ?"
+        conn.execute(query, values)
+        conn.commit()
+        return get_client(client_id)
+    finally:
+        conn.close()
+
 def list_clients(status: str = 'active', limit: int = 20, offset: int = 0) -> Dict[str, Any]:
     """List clients with pagination"""
     conn = get_db_connection()
@@ -280,6 +312,46 @@ def get_api_key_by_hash(key_hash: str) -> Optional[Dict[str, Any]]:
 
         # Treat expired keys as revoked
         if row['expires_at'] and row['expires_at'] < datetime.utcnow().isoformat():
+            return None
+
+        cur.execute(
+            """SELECT resource, can_read, can_write FROM api_key_scopes WHERE api_key_id = ?""",
+            (row['id'],)
+        )
+        scopes = {}
+        for scope_row in cur.fetchall():
+            scopes[scope_row['resource']] = {
+                'read': bool(scope_row['can_read']),
+                'write': bool(scope_row['can_write']),
+            }
+
+        return {
+            'id': row['id'],
+            'client_id': row['client_id'],
+            'name': row['name'],
+            'prefix': row['key_prefix'],
+            'status': row['status'],
+            'created_at': row['created_at'],
+            'revoked_at': row['revoked_at'],
+            'last_used_at': row['last_used_at'],
+            'expires_at': row['expires_at'],
+            'scopes': scopes,
+        }
+    finally:
+        conn.close()
+
+def get_api_key_by_id(key_id: int) -> Optional[Dict[str, Any]]:
+    """Get API key by ID"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """SELECT id, client_id, name, key_prefix, status, created_at, revoked_at, last_used_at, expires_at
+               FROM api_keys WHERE id = ?""",
+            (key_id,)
+        )
+        row = cur.fetchone()
+        if not row:
             return None
 
         cur.execute(
@@ -813,3 +885,205 @@ def suggest_bindings_from_catalog(client_id: int, connector_id: int) -> List[Dic
                 }
 
     return sorted(best.values(), key=lambda x: x['confidence'], reverse=True)
+
+# ============ EXPOSED TABLES (Dynamic REST endpoints) ============
+# ponytail: in-memory cache; add DB table if multi-instance
+_exposed_tables_cache: dict[int, list[dict]] = {}
+
+def list_exposed_tables(client_id: int) -> list[dict]:
+    """List tables configured for dynamic REST endpoint exposure."""
+    return _exposed_tables_cache.get(client_id, [])
+
+def upsert_exposed_table(
+    client_id: int,
+    table_name: str,
+    slug: str,
+    pk_column: str,
+    enabled: bool,
+    columns: Optional[list[str]] = None
+) -> dict:
+    """Add or update an exposed table configuration."""
+    if client_id not in _exposed_tables_cache:
+        _exposed_tables_cache[client_id] = []
+
+    tables = _exposed_tables_cache[client_id]
+    existing = next((t for t in tables if t['table_name'] == table_name), None)
+
+    record = {
+        'table_name': table_name,
+        'slug': slug,
+        'pk_column': pk_column,
+        'enabled': enabled,
+        'columns': columns or [],
+    }
+
+    if existing:
+        existing.update(record)
+    else:
+        tables.append(record)
+
+    return record
+
+def toggle_exposed_table(client_id: int, table_name: str, enabled: bool) -> bool:
+    """Toggle exposure status for a table. Returns True if found."""
+    tables = _exposed_tables_cache.get(client_id, [])
+    for t in tables:
+        if t['table_name'] == table_name:
+            t['enabled'] = enabled
+            return True
+    return False
+
+def delete_exposed_table(client_id: int, table_name: str) -> bool:
+    """Delete an exposed table configuration. Returns True if found and deleted."""
+    tables = _exposed_tables_cache.get(client_id, [])
+    for i, t in enumerate(tables):
+        if t['table_name'] == table_name:
+            tables.pop(i)
+            return True
+    return False
+
+# ============ SCHEMA CONTEXT (AI-enriched semantic info) ============
+_schema_context_cache: dict[int, dict] = {}
+
+def get_schema_context(client_id: int) -> Optional[dict]:
+    """Get semantic context for a client's schema (AI-enriched)."""
+    return _schema_context_cache.get(client_id)
+
+def save_schema_context(client_id: int, context: dict) -> None:
+    """Save semantic context for a client's schema."""
+    _schema_context_cache[client_id] = context
+
+# ============ AI MEMORY (Lessons, instructions, validated patterns) ============
+# ponytail: in-memory; add DB table if retention beyond process lifetime is needed
+_ai_memory_id_counter = 0
+_ai_memory_cache: dict[int, list[dict]] = {}  # client_id -> [memory record]
+
+def add_ai_memory(
+    client_id: int,
+    kind: str,  # 'lesson', 'instruction', etc
+    content: Optional[str] = None,
+    question: Optional[str] = None,
+    terms: Optional[str] = None,
+    plan: Optional[list] = None,
+    status: str = 'pending',
+    created_by: Optional[str] = None,
+    source: Optional[str] = None,
+) -> dict:
+    """Add a memory record (lesson, instruction, etc)."""
+    global _ai_memory_id_counter
+    _ai_memory_id_counter += 1
+
+    if client_id not in _ai_memory_cache:
+        _ai_memory_cache[client_id] = []
+
+    record = {
+        'id': _ai_memory_id_counter,
+        'kind': kind,
+        'content': content,
+        'question': question,
+        'terms': terms,
+        'plan': plan or [],
+        'status': status,
+        'created_by': created_by,
+        'created_at': datetime.utcnow().isoformat(),
+        'uses': 0,
+        'source': source,
+    }
+    _ai_memory_cache[client_id].append(record)
+    return record
+
+def list_ai_memory(
+    client_id: int,
+    kind: Optional[str] = None,
+    status: Optional[str] = None
+) -> list[dict]:
+    """List memory records for a client."""
+    records = _ai_memory_cache.get(client_id, [])
+    if kind:
+        records = [r for r in records if r['kind'] == kind]
+    if status:
+        records = [r for r in records if r['status'] == status]
+    return records
+
+def find_ai_lesson(client_id: int, terms_key: str) -> Optional[dict]:
+    """Find a validated lesson by terms key."""
+    records = _ai_memory_cache.get(client_id, [])
+    for r in records:
+        if r['terms'] == terms_key and r['status'] == 'validated':
+            return r
+    return None
+
+def update_ai_memory(
+    memory_id: int,
+    status: Optional[str] = None,
+    content: Optional[str] = None,
+    bump_use: bool = False,
+    plan: Optional[list] = None
+) -> Optional[dict]:
+    """Update a memory record."""
+    for client_records in _ai_memory_cache.values():
+        for record in client_records:
+            if record['id'] == memory_id:
+                if status:
+                    record['status'] = status
+                if content:
+                    record['content'] = content
+                if plan:
+                    record['plan'] = plan
+                if bump_use:
+                    record['uses'] = record.get('uses', 0) + 1
+                return record
+    return None
+
+def delete_ai_memory(memory_id: int) -> bool:
+    """Delete a memory record."""
+    for client_records in _ai_memory_cache.values():
+        for i, record in enumerate(client_records):
+            if record['id'] == memory_id:
+                client_records.pop(i)
+                return True
+    return False
+
+# ============ MAPPING STATUS ============
+_mapping_status_cache: dict[int, dict] = {}  # client_id -> status dict
+
+def set_mapping_status(
+    client_id: int,
+    status: str,  # 'pending', 'running', 'completed', 'failed'
+    progress: Optional[dict] = None,
+    error: Optional[str] = None
+) -> dict:
+    """Set the schema mapping status for a client."""
+    record = {
+        'client_id': client_id,
+        'status': status,
+        'progress': progress or {},
+        'error': error,
+        'updated_at': datetime.utcnow().isoformat(),
+    }
+    _mapping_status_cache[client_id] = record
+    return record
+
+def get_mapping_status(client_id: int) -> Optional[dict]:
+    """Get the schema mapping status for a client."""
+    return _mapping_status_cache.get(client_id)
+
+# ============ SETTINGS ============
+_settings_cache: dict[str, dict] = {}  # key -> {value, is_secret, set_by, set_at}
+
+def set_setting(key: str, value: Any, is_secret: bool = False, set_by: Optional[str] = None) -> dict:
+    """Set a global application setting."""
+    record = {
+        'key': key,
+        'value': value,
+        'is_secret': is_secret,
+        'set_by': set_by or 'system',
+        'set_at': datetime.utcnow().isoformat(),
+    }
+    _settings_cache[key] = record
+    return record
+
+def get_setting(key: str) -> Optional[Any]:
+    """Get a setting value by key."""
+    record = _settings_cache.get(key)
+    return record.get('value') if record else None

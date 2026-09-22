@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Protótipo privado do gerenciador Firebird API Manager." />
+    <title>Firebird API Manager</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none"><path d="M18.6 3.6c.5 4-1.4 6-3.6 8.3-1.6 1.7-2.7 3.4-2.4 5.6.1 1.1.7 2 1.6 2.7-.2-2.3 1.2-3.9 3.1-5.3.2 2.1 2 3.2 2.5 5 .4 1.5-.1 3.1-1.3 4.3 3.8-.9 6.4-3.9 6.3-7.9-.1-4.4-3.3-8.4-6.2-12.7Z" fill="currentColor"/><path d="M12.7 9.9C9.3 12.6 7 15.1 7.2 19.1c.2 5 4.3 8.9 9.3 8.9 1.9 0 3.7-.6 5.1-1.6-5.8.5-10-2.6-10.2-7.1-.1-2.6 1.1-4.4 2.5-6.3.8-1.1.6-2.4-1.2-3.1Z" fill="currentColor" opacity=".55"/></svg>
+          </div>
+          <div><strong>Firebird</strong><span>API Manager</span></div>
+        </div>
+
+        <nav class="primary-nav" aria-label="Navegação principal">
+          <button class="nav-item active" data-view="overview"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+          <button class="nav-item" data-view="databases"><span class="nav-icon">▱</span><span>Bancos</span><span class="nav-count">4</span></button>
+          <button class="nav-item" data-view="mapper"><span class="nav-icon">⇧</span><span>Upload & rotas</span></button>
+          <button class="nav-item" data-view="catalog"><span class="nav-icon">⌘</span><span>Catálogo</span></button>
+          <button class="nav-item" data-view="routes"><span class="nav-icon">↗</span><span>Rotas & Swagger</span><span class="status-dot"></span></button>
+          <button class="nav-item" data-view="clients"><span class="nav-icon">◇</span><span>Clientes & chaves</span></button>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <div class="environment-card">
+            <div><span class="live-dot"></span> Ambiente</div>
+            <strong>Sandbox</strong>
+            <small>Dados demonstrativos</small>
+          </div>
+          <button class="user-profile">
+            <span class="avatar">CS</span>
+            <span><strong>Cristhian Schug</strong><small>Administrador</small></span>
+            <span class="kebab">•••</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menu">☰</button>
+          <div class="breadcrumbs"><span>Workspace</span><b>/</b><strong id="currentCrumb">Visão geral</strong></div>
+          <div class="top-actions">
+            <label class="global-search">
+              <span>⌕</span>
+              <input id="globalSearch" placeholder="Buscar banco, rota ou cliente" />
+              <kbd>⌘ K</kbd>
+            </label>
+            <button class="icon-button" aria-label="Notificações">♢<span class="notification-dot"></span></button>
+          </div>
+        </header>
+
+        <div class="content-area">
+          <section class="view active" id="view-overview">
+            <div class="page-heading">
+              <div><p class="eyebrow">OPERAÇÃO DA API</p><h1>Bom trabalho, Cristhian.</h1><p>Acompanhe os bancos mapeados e avance rapidamente até as rotas publicadas.</p></div>
+              <button class="primary-button" data-open-modal="database"><span>＋</span> Cadastrar estrutura</button>
+            </div>
+
+            <div class="metric-grid">
+              <article class="metric-card"><div class="metric-icon cyan">▱</div><div><span>Bancos cadastrados</span><strong>4</strong><small><b>+1</b> nos últimos 30 dias</small></div></article>
+              <article class="metric-card"><div class="metric-icon violet">↗</div><div><span>Rotas geradas</span><strong>248</strong><small><b>92%</b> publicadas</small></div></article>
+              <article class="metric-card"><div class="metric-icon amber">⇧</div><div><span>Engines suportadas</span><strong>8</strong><small><b>SQL</b>, NoSQL e ORM</small></div></article>
+              <article class="metric-card"><div class="metric-icon amber">◇</div><div><span>Clientes ativos</span><strong>12</strong><small><b>3</b> em homologação</small></div></article>
+            </div>
+
+            <div class="dashboard-grid">
+              <section class="panel database-panel">
+                <div class="panel-header"><div><h2>Bancos e mapeamento</h2><p>Estruturas mais recentes</p></div><button class="text-button" data-nav="databases">Ver todos <span>→</span></button></div>
+                <div class="db-list" id="overviewDbList"></div>
+              </section>
+              <section class="panel flow-panel">
+                <div class="panel-header"><div><h2>Fluxo de publicação</h2><p>Visão consolidada</p></div><span class="pill neutral">Sandbox</span></div>
+                <div class="flow-track">
+                  <div class="flow-step complete"><span>✓</span><div><strong>Estrutura lida</strong><small>4 bancos</small></div></div>
+                  <div class="flow-line complete"></div>
+                  <div class="flow-step complete"><span>✓</span><div><strong>Objetos mapeados</strong><small>1.247 objetos</small></div></div>
+                  <div class="flow-line partial"></div>
+                  <div class="flow-step current"><span>3</span><div><strong>Rotas revisadas</strong><small>228 de 248</small></div></div>
+                  <div class="flow-line"></div>
+                  <div class="flow-step"><span>4</span><div><strong>Publicação</strong><small>Aguardando revisão</small></div></div>
+                </div>
+                <button class="secondary-button full" data-nav="routes">Revisar rotas pendentes <span>18</span></button>
+              </section>
+            </div>
+
+            <section class="panel activity-panel">
+              <div class="panel-header"><div><h2>Atividade recente</h2><p>Alterações rastreadas no workspace</p></div><button class="filter-button">Últimos 7 dias⌄</button></div>
+              <div class="activity-table table-scroll">
+                <div class="table-row table-head"><span>EVENTO</span><span>RECURSO</span><span>RESPONSÁVEL</span><span>QUANDO</span><span>STATUS</span></div>
+                <div class="table-row"><span><i class="event-icon green">✓</i> Mapeamento concluído</span><span>ERP Anexar Produção</span><span><i class="mini-avatar">CS</i> Cristhian</span><span>há 12 min</span><span><b class="pill success">Concluído</b></span></div>
+                <div class="table-row"><span><i class="event-icon violet">↗</i> Rotas regeneradas</span><span>Comercial Demo</span><span><i class="mini-avatar blue">MT</i> Micael</span><span>há 1h</span><span><b class="pill info">Processado</b></span></div>
+                <div class="table-row"><span><i class="event-icon amber">♢</i> API key rotacionada</span><span>Orion Autopeças • Demo</span><span><i class="mini-avatar">CS</i> Cristhian</span><span>ontem</span><span><b class="pill success">Concluído</b></span></div>
+              </div>
+            </section>
+          </section>
+
+          <section class="view" id="view-databases">
+            <div class="page-heading compact"><div><p class="eyebrow">ESTRUTURAS</p><h1>Bancos cadastrados</h1><p>Gerencie conexões, versionamento de schema e o estado do mapeamento.</p></div><button class="primary-button" data-open-modal="database">＋ Cadastrar estrutura</button></div>
+            <div class="toolbar panel slim"><label class="inline-search"><span>⌕</span><input id="dbSearch" placeholder="Buscar por nome, versão ou ambiente" /></label><div class="toolbar-actions"><button class="filter-button">Todos os ambientes⌄</button><button class="filter-button">Status⌄</button></div></div>
+            <div class="database-grid" id="databaseGrid"></div>
+          </section>
+
+          <section class="view" id="view-mapper">
+            <div class="page-heading compact">
+              <div><p class="eyebrow">UPLOAD E ENGENHARIA REVERSA</p><h1>Validar estrutura e gerar rotas</h1><p>Insira um schema demonstrativo, escolha a origem e acompanhe a leitura até a criação dos endpoints.</p></div>
+              <button class="primary-button" data-open-modal="database">＋ Nova estrutura</button>
+            </div>
+
+            <div class="mapper-layout">
+              <section class="panel upload-workbench">
+                <div class="panel-header"><div><h2>Entrada da estrutura</h2><p>O protótipo simula a leitura sem enviar dados reais.</p></div><span class="pill neutral" id="selectedEnginePill">Firebird</span></div>
+                <div class="engine-grid" id="engineGrid"></div>
+                <form id="schemaUploadForm" class="schema-form">
+                  <div class="form-grid">
+                    <label>Nome da estrutura<input name="schemaName" required value="ERP Multibanco Demo" /></label>
+                    <label>Ambiente<select name="schemaEnv"><option>Homologação</option><option>Produção</option><option>Desenvolvimento</option></select></label>
+                  </div>
+                  <label>Arquivo ou origem técnica
+                    <div class="upload-zone interactive-upload" id="schemaDropZone">
+                      <input id="schemaFileInput" name="schemaFile" type="file" accept=".fdb,.sql,.bak,.dacpac,.json,.bson,.js,.ts,.prisma,.zip" />
+                      <span>⇧</span><strong id="schemaFileLabel">Selecionar estrutura, dump, JSON, modelos Node ou pacote .zip</strong><small>Firebird, MySQL, SQL Server, MariaDB, PostgreSQL, MongoDB, Node/ORM e outros conectores futuros</small>
+                    </div>
+                  </label>
+                  <div class="schema-actions">
+                    <button class="secondary-button" type="button" id="loadDemoSchema">Usar demo PostgreSQL</button>
+                    <button class="primary-button" type="submit">Validar e mapear rotas</button>
+                  </div>
+                </form>
+              </section>
+
+              <aside class="panel validation-panel" id="validationPanel"></aside>
+            </div>
+
+            <section class="panel mapping-results">
+              <div class="panel-header"><div><h2>Resultado do mapeamento</h2><p>Rotas propostas a partir de tabelas, coleções, views, procedures e relacionamentos.</p></div><button class="secondary-button" id="promoteMappedRoutes">Enviar para Swagger</button></div>
+              <div class="mapping-summary" id="mappingSummary"></div>
+              <div class="mapped-routes-table table-scroll" id="mappedRoutesTable"></div>
+            </section>
+          </section>
+
+          <section class="view" id="view-catalog">
+            <div class="page-heading compact"><div><p class="eyebrow">METADADOS</p><h1>Catálogo de objetos</h1><p>Explore o schema lido e a correspondência de cada objeto com a API.</p></div><button class="secondary-button" id="syncCatalog">↻ Sincronizar schema</button></div>
+            <div class="catalog-layout">
+              <aside class="panel catalog-tree">
+                <label class="inline-search small"><span>⌕</span><input id="objectSearch" placeholder="Buscar objeto" /></label>
+                <div class="db-selector"><small>BANCO ATUAL</small><button><span class="db-square">A</span><span><strong>ERP Anexar Produção</strong><small>Firebird 3.0 • ODS 12</small></span><b>⌄</b></button></div>
+                <div class="object-tabs"><button class="active" data-object-tab="tables">Tabelas <b>86</b></button><button data-object-tab="triggers">Triggers <b>31</b></button><button data-object-tab="procedures">Procedures <b>18</b></button></div>
+                <div id="objectTree" class="object-tree"></div>
+              </aside>
+              <section class="panel object-detail" id="objectDetail"></section>
+            </div>
+          </section>
+
+          <section class="view" id="view-routes">
+            <div class="page-heading compact"><div><p class="eyebrow">DOCUMENTAÇÃO INTERATIVA</p><h1>Rotas & Swagger</h1><p>Consulte contratos, permissões e execute requisições no ambiente sandbox.</p></div><div class="heading-actions"><button class="secondary-button" id="exportOpenApi">⇩ OpenAPI JSON</button><button class="primary-button" id="publishRoutes">Publicar revisão</button></div></div>
+            <div class="swagger-shell panel">
+              <aside class="route-list-pane">
+                <div class="api-base"><span class="live-dot"></span><div><small>BASE URL • SANDBOX</small><strong>https://sandbox.api.firebird.local/v1</strong></div><button class="copy-button" data-copy="https://sandbox.api.firebird.local/v1">□</button></div>
+                <label class="inline-search small"><span>⌕</span><input id="routeSearch" placeholder="Buscar rota ou tag" /></label>
+                <div class="method-filters"><button class="active" data-method="ALL">Todos</button><button data-method="GET">GET</button><button data-method="POST">POST</button><button data-method="PATCH">PATCH</button></div>
+                <div id="routeList" class="route-list"></div>
+              </aside>
+              <section class="route-document" id="routeDocument"></section>
+            </div>
+          </section>
+
+          <section class="view" id="view-clients">
+            <div class="page-heading compact"><div><p class="eyebrow">ACESSO E ISOLAMENTO</p><h1>Clientes & API keys</h1><p>Controle tenants, escopos, ambientes e credenciais sem expor segredos.</p></div><button class="primary-button" data-open-modal="client">＋ Novo cliente</button></div>
+            <div class="security-banner"><span>⌾</span><div><strong>Política de credenciais ativa</strong><p>Segredos nunca são exibidos. O painel guarda somente hash, prefixo e fingerprint para identificação e auditoria.</p></div><b>Gerenciada</b></div>
+            <div class="clients-layout">
+              <section class="panel clients-table-panel">
+                <div class="panel-header"><div><h2>Clientes</h2><p id="clientCount">4 tenants cadastrados</p></div><label class="inline-search small clients-search"><span>⌕</span><input id="clientSearch" placeholder="Buscar cliente" /></label></div>
+                <div class="clients-table table-scroll" id="clientsTable"></div>
+              </section>
+              <aside class="panel key-panel" id="keyPanel"></aside>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="databaseModal" aria-hidden="true">
+      <div class="modal">
+        <button class="modal-close" data-close-modal>×</button>
+        <div class="modal-icon">▱</div><h2>Cadastrar estrutura</h2><p>Crie o registro de um banco e simule a leitura segura do schema.</p>
+        <form id="databaseForm">
+          <label>Nome da estrutura<input name="name" required placeholder="Ex.: ERP Cliente Produção" /></label>
+          <div class="form-grid"><label>Tipo de origem<select name="engine"><option>Firebird</option><option>MySQL</option><option>SQL Server</option><option>MariaDB</option><option>PostgreSQL</option><option>MongoDB</option><option>Node/ORM</option><option>Outro</option></select></label><label>Versão / dialeto<input name="version" value="3.0" placeholder="Ex.: 3.0, 15, 8.0, 7.0" /></label></div>
+          <label>Ambiente<select name="environment"><option>Produção</option><option>Homologação</option><option>Desenvolvimento</option></select></label>
+          <label>Origem do schema<div class="upload-zone"><span>⇧</span><strong>Selecionar estrutura, dump ou pacote técnico</strong><small>O protótipo não envia nem armazena dados reais</small></div></label>
+          <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Cancelar</button><button class="primary-button" type="submit">Cadastrar e mapear</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="clientModal" aria-hidden="true">
+      <div class="modal">
+        <button class="modal-close" data-close-modal>×</button>
+        <div class="modal-icon">◇</div><h2>Novo cliente</h2><p>Cadastre um tenant isolado e defina o banco autorizado.</p>
+        <form id="clientForm">
+          <label>Razão social<input name="name" required placeholder="Ex.: Empresa Demonstração Ltda." /></label>
+          <label>CNPJ<input name="cnpj" required placeholder="00.000.000/0001-00" /></label>
+          <label>Banco autorizado<select name="database"><option>ERP Anexar Produção</option><option>Comercial Demo</option><option>Provisionador Core</option></select></label>
+          <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Cancelar</button><button class="primary-button" type="submit">Criar tenant</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="keyModal" aria-hidden="true">
+      <div class="modal small-modal">
+        <button class="modal-close" data-close-modal>×</button>
+        <div class="modal-icon amber">⌾</div><h2>Gerar nova API key</h2><p>A chave será provisionada sem revelar o segredo nesta interface.</p>
+        <form id="keyForm">
+          <label>Identificação<input name="label" required value="Integração principal" /></label>
+          <label>Expiração<select name="expiry"><option>90 dias</option><option>180 dias</option><option>1 ano</option></select></label>
+          <fieldset><legend>Escopos</legend><label class="check-label"><input type="checkbox" checked /> Leitura</label><label class="check-label"><input type="checkbox" /> Escrita</label><label class="check-label"><input type="checkbox" /> Relatórios</label></fieldset>
+          <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Cancelar</button><button class="primary-button" type="submit">Provisionar com segurança</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>
