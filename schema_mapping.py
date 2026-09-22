@@ -225,7 +225,8 @@ def status_with_recovery(client_id: int) -> Optional[dict]:
     """
     st = get_mapping_status(client_id)
     if st is None:
-        return None
+        # Default status se nunca foi iniciado
+        st = set_mapping_status(client_id, 'idle', {}, None)
     running = is_running(client_id)
     if st['status'] == 'running' and not running:
         set_mapping_status(client_id, 'error', st.get('progress') or 0, None,
